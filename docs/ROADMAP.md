@@ -343,6 +343,26 @@ UI Style、主题预设、卫星 TLE、码表都在 SPI flash 里，**刷固件�
 里面是固定名 `OpenMDUV380_10W_PLUS.bin` 加 18 个 `.gla` 语言文件，
 语言文件从上一个 zip 原样搬过来。
 
+## 发布
+
+**v20260921 首个公开构建**，两处同步：
+
+- GitHub  <https://github.com/datianda/md-uv390-plus-firmware>
+- Gitee   <https://gitee.com/sitg/md-uv390-plus-firmware>
+
+发布内容：固件源码（本地改动 + 上游 fork）、主机工具 `tools/`、
+操作卡与文档、`.bin` / `.zip` / `SHA256SUMS.txt` 挂 Release。
+CI 三种配置（stock / release-no-aes / release）全绿，
+并断言二进制里 codec 窗口仍是全 0xFF —— 防止哪天误把带 AMBE 的包发出去。
+
+授权沿用上游：**BSD 三条款 + 禁止商业使用**，不能改挂 MIT/Apache。
+`NOTICE.md` 写了第三方、商标、无从属声明，以及 AES 的法律警告。
+
+发布工具与素材在 `release/`，Gitee 的 API 脚本是 `release/gitee.py`。
+**Gitee 两条坑**（已回写进 authkit 的发版手册）：
+空仓库不能设为公开（先推再改）；Windows 的 `curl.exe` 会把中文 argv 烧成 U+FFFD
+而且照样回 200 —— 必须把存回来的文本跟原文逐字符比。
+
 ## 文档
 
 - **`UV390操作卡.html`** —— 单页速查卡，日常操作（01–08）+ 工程记录（09–14：

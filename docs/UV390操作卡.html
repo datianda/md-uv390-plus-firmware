@@ -284,6 +284,8 @@
     max-width:100%; max-height:440px; width:auto; height:auto;
   }
   figure.shot img.px{image-rendering:pixelated}
+  /* a dense UI screenshot needs the full width; the 440px cap is for radio screens */
+  figure.shot img.wide{max-height:none; width:100%}
   figure.shot figcaption{
     font-size:12px; color:var(--muted); padding:7px 10px;
     border-top:1px solid var(--line-2); line-height:1.55;
@@ -344,6 +346,7 @@
       <a href="#backup">备份</a>
       <a href="#flash">刷机</a>
       <a href="#build">编译</a>
+      <a href="#panel">控制端</a>
       <a href="#tools">工具箱</a>
       <a href="#pits">别再试了</a>
     </nav>
@@ -692,7 +695,7 @@
     <p><span class="lbl">限制</span><b>只改前景色</b>，这是设计决定不是偷懒。三个背景项都是陷阱：<code>BG_MENU_NAME</code> 染了会在彩色标题条上给每个字符打一个背景方块；<code>BG_HEADER_TEXT</code> 没有整条填充、染了就是「字底深块、字间露白」；<code>BG_MENU_ITEM_SELECTED</code> 选中行文字是反色画的，要染就得把菜单全部文字一起染。</p>
     <p>预设表全是 <code>const</code>，<b>RAM 零开销</b>。不存「你选了哪个」，而是比对当前颜色反推 —— 所以手动改过任何一项就老实显示 <code>Custom</code>。</p>
     <figure class="shot">
-      <img class="px" src="media/theme-mono-vs-colour.png" alt="Mono 与 Colour 预设对比">
+      <img class="px" src="../media/theme-mono-vs-colour.png" alt="Mono 与 Colour 预设对比">
       <figcaption>同一屏、同一固件，只换预设。上 Mono（上游默认）整屏 2 色；下 Colour 6 色，且每种都有含义 —— S 表绿、S5 以上琥珀、电池有外框、TX 那行红而 RX 保持黑。</figcaption>
     </figure>
   </div>
@@ -712,15 +715,15 @@
     </ul>
     <div class="shots">
       <figure class="shot">
-        <img class="px" src="media/info-fm-repeater.png" alt="FM 中继信道">
+        <img class="px" src="../media/info-fm-repeater.png" alt="FM 中继信道">
         <figcaption><b>FM 中继</b>　<code>438.4500 −5.500 T88.5</code> —— 下行、差频、上行亚音。</figcaption>
       </figure>
       <figure class="shot">
-        <img class="px" src="media/info-dmr.png" alt="DMR 信道">
+        <img class="px" src="../media/info-dmr.png" alt="DMR 信道">
         <figcaption><b>DMR</b>　<code>145.3500 −0.600 CC8</code>，表头也有 <code>C8</code>，两处一致。</figcaption>
       </figure>
       <figure class="shot">
-        <img class="px" src="media/info-sat.png" alt="卫星信道">
+        <img class="px" src="../media/info-sat.png" alt="卫星信道">
         <figcaption><b>卫星（跨波段）</b>　<code>145.9600 &gt;435.2500 T67.0</code> —— 差频超 10 MHz，直接给上行频率。</figcaption>
       </figure>
     </div>
@@ -751,7 +754,7 @@
     <p style="margin-top:9px"><span class="lbl">存在哪</span>自己的自定义数据块（类型 9），<b>不</b>挂在 THEME_DAY/NIGHT 后面 —— 那两块是按固定长度数组读回的，加长会让已经存过颜色的人升级后设置失效。独立块的好处是「不存在」天然等于「用默认值」，不用迁移、不用版本号。</p>
     <p><span class="lbl">注意</span><code>WF gamma</code> 存 0 <b>必须继续表示 Square</b>：这个字节在选项存在之前一直是 0，而当时的行为就是平方律。改变 0 的含义会让已经保存过设置的人升级后显示无声变样。</p>
     <figure class="shot">
-      <img class="px" src="media/uistyle-menu.png" alt="UI Style 菜单">
+      <img class="px" src="../media/uistyle-menu.png" alt="UI Style 菜单">
       <figcaption>7 项全在一屏里。</figcaption>
     </figure>
   </div>
@@ -767,15 +770,15 @@
     <p><span class="lbl">换掉了什么</span>原来是经典 jet 彩虹。彩虹对「量级」这种数据是<b>错的编码</b>：它既不是感知均匀的，<b>最亮的区域还在中段</b>。实测 2m 底噪占 level 5–38、中位 19，正好被涂成满饱和青绿，真载波（level 63）淹在里面。改成单色阶 <b>黑→蓝→白</b>，亮度随量级单调递增。</p>
     <div class="shots">
       <figure class="shot">
-        <img class="px" src="media/waterfall-before-after.png" alt="瀑布图调色板前后对比">
+        <img class="px" src="../media/waterfall-before-after.png" alt="瀑布图调色板前后对比">
         <figcaption><b>同一批真实数据走两套映射</b>（屏幕上每个瀑布像素都能反查回 level，所以不用刷机就能对比）。上：彩虹 + 线性；下：单色阶 + 平方律。</figcaption>
       </figure>
       <figure class="shot">
-        <img class="px" src="media/waterfall-jet.png" alt="旧彩虹调色板实机">
+        <img class="px" src="../media/waterfall-jet.png" alt="旧彩虹调色板实机">
         <figcaption>实机旧版：整片青绿，信号在哪看不出来。</figcaption>
       </figure>
       <figure class="shot">
-        <img class="px" src="media/waterfall-mono.png" alt="新调色板实机">
+        <img class="px" src="../media/waterfall-mono.png" alt="新调色板实机">
         <figcaption>实机新版：底噪中位 7/63，峰值标记自己读出 437.7875 MHz。</figcaption>
       </figure>
     </div>
@@ -813,11 +816,11 @@
     <p><span class="lbl">为什么有用</span>上面的修正后频率回答「调到多少」，这一行回答「<b>我在过境的哪一段</b>」—— 偏移开始时最大、最近点过零、之后反向。<b>光看修正后的频率看不出趋势。</b>而且这是这一屏上唯一能确认上行也在被修正的地方（两路量值按频率比不同、符号相反）。</p>
     <div class="shots">
       <figure class="shot">
-        <img class="px" src="media/doppler.png" alt="多普勒读数">
+        <img class="px" src="../media/doppler.png" alt="多普勒读数">
         <figcaption>ISS 过境。<code>R+9.11</code> 表示下行被推高 9.11 kHz，<code>T−3.03</code> 上行被推低 3.03 kHz。</figcaption>
       </figure>
       <figure class="shot">
-        <img class="px" src="media/doppler-truncated.png" alt="被截断的多普勒读数">
+        <img class="px" src="../media/doppler-truncated.png" alt="被截断的多普勒读数">
         <figcaption><b>自查揪出来的 bug</b>：缓冲区用了 <code>SCREEN_LINE_BUFFER_SIZE</code>(17)，而这行正好 17 字符，<code>snprintf</code> 悄悄砍掉最后一位（<code>T−2.9</code> 本该是 <code>T−2.91</code>）。看屏幕发现不了 —— 有数字有正负号，完全合理。</figcaption>
       </figure>
     </div>
@@ -839,7 +842,7 @@ python tools/sat.py addfm   <b>--yes</b>     <i># 空槽位填 FM 转发卫星</
     <p><span class="lbl">频率怎么来的</span><b>不是回忆的，是两个独立来源交叉验证的</b>：SatNOGS DB 的收发信机记录与 AMSAT 的 FM 卫星频率页都给出上行 145.970 / 下行 436.400，一致才写。<b>TEVEL 的 CTCSS 留空</b> —— 两个来源都没写，而亚音错了是静默失败（照发、卫星不理、屏幕无提示），比留空更难排查。<b>没加 AO-27 和希望一号</b>：SatNOGS 标它们「active」指的是记录有效，不代表卫星还在工作，两颗都不在 AMSAT 当前活跃列表上。</p>
     <p><span class="lbl">格式坑</span>TLE 在码表里是<b>半字节压缩</b>的，每字节两个 nibble 查表 <code>0123456789. +-*</code>，存的不是原始文本而是推演器要的字段、按列直接拼接无分隔符。还有：<code>loadKeps()</code> 在<b>第一个名字首字节为 0 的槽位就停</b>，新记录必须连续写在已有的之后，中间不能留空。</p>
     <figure class="shot">
-      <img class="px" src="media/tevel-passes.png" alt="TEVEL 过境预报">
+      <img class="px" src="../media/tevel-passes.png" alt="TEVEL 过境预报">
       <figcaption>电台已经在为新加的 TEVEL 算预报了 —— 证明编码格式被推演器正确接受。</figcaption>
     </figure>
   </div>
@@ -854,7 +857,7 @@ python tools/sat.py addfm   <b>--yes</b>     <i># 空槽位填 FM 转发卫星</
     <p><span class="lbl">怎么用</span>双击 <code>启动控制端.bat</code> → 浏览器开 <code>127.0.0.1:8390</code> → 频段日志卡片启停、导出、看热力图。离线出 PNG 用 <code>tools/render_bandlog.py</code>（明暗两套）。</p>
     <p><span class="lbl">限制</span>和 NMEA 定位日志<b>共用那 2 MB，运行时互斥</b> —— 同时只能开一个。</p>
     <figure class="shot">
-      <img src="media/bandlog-heatmap.png" alt="频段占用热力图">
+      <img src="../media/bandlog-heatmap.png" alt="频段占用热力图">
       <figcaption>实机 14 轮，437.300–439.300 MHz。<b>437.4750 MHz 有稳定信号</b>（14 轮里 11 轮是峰值，RSSI 51–55 对底噪 45）—— 就是那条竖线。第一版热力图用 min/max 做标尺，被不完整扫描的 0 值绑架，整片深蓝读不出信息；改成<b>以中位数为下限</b>后底噪压平、信号才凸显。</figcaption>
     </figure>
   </div>
@@ -890,7 +893,7 @@ python tools/sat.py addfm   <b>--yes</b>     <i># 空槽位填 FM 转发卫星</
     <p><span class="lbl">为什么日常固件没有</span>它和 <code>ENABLE_AES + ENABLE_DMR_DATA</code> <b>一起开会 RAM 溢出 104 字节</b>，装不下。<b>所以跑日常固件时按键注入不可用</b>，只剩抓屏和刷机。以后再改 UI 要么你在键盘前，要么临时刷一版 DEV 再刷回来。</p>
     <p><span class="lbl">关键修复</span>虚拟 SK1/SK2 —— 注入的是 <code>keys</code>，而 <code>BUTTONCHECK_DOWN(ev, BUTTON_SK2)</code> 读的是 <code>buttons</code>，两套状态。所以所有 <b>SK2+绿 存盘</b>的手势（配色预设、UI Style 都是）原本远程做不了，只能预览不能落盘。</p>
     <figure class="shot">
-      <img class="px" src="media/daily-vfo.png" alt="日常固件 VFO 主界面">
+      <img class="px" src="../media/daily-vfo.png" alt="日常固件 VFO 主界面">
       <figcaption>日常固件刷完的实机画面。表头列段实测 <code>FM</code> 1–11 · <code>1W</code> 60–69 · 电池 72–83 · GPS 108–109 · 时钟 131–158，各就各位零重叠。</figcaption>
     </figure>
   </div>
@@ -1055,9 +1058,57 @@ python tools/package_fw.py build/openuv380-10w.bin   <i># 想用 CPS 刷才需�
   </div>
 </section>
 
+<section id="panel">
+  <h2><span class="num">13</span>控制端</h2>
+  <p class="lede">大部分事情不用记命令，在浏览器里点就行。双击根目录的 <code>启动控制端.bat</code>（或 <code>python tools/ogd77_server.py</code>），浏览器开 <code>127.0.0.1:8390</code>。<b>只监听本机，不对外。</b></p>
+
+  <figure class="shot">
+    <img class="wide" src="../media/control-panel.jpg" alt="控制端界面">
+    <figcaption>真在跑的样子。左边整张码表，右边那块<b>是电台此刻的屏幕</b> —— 读帧缓冲现画出来的，不是截图文件。顶栏是串口号、机型和固件版本。</figcaption>
+  </figure>
+
+  <div class="panel" style="margin-top:12px"><div class="tablewrap">
+    <table class="wrapcells">
+      <thead><tr><th>卡片</th><th>干什么</th><th>要求</th></tr></thead>
+      <tbody>
+        <tr data-k="信道 码表 列表"><td class="name">信道</td><td>列出整张码表：编号 / 名称 / 收发频率 / 收发亚音</td><td class="n">—</td></tr>
+        <tr data-k="修改信道 写入 亚音"><td class="name">修改信道</td><td>改名称（ASCII ≤16）、收发频率、收发亚音。亚音<b>留空 = 不改，填 <code>none</code> = 清除</b></td><td class="n">—</td></tr>
+        <tr data-k="热力图 频段占用"><td class="name">频段占用热力图</td><td>把导出的频段日志画成热力图</td><td class="n">BAND_LOG</td></tr>
+        <tr data-k="远程屏幕 镜像 虚拟键盘"><td class="name">远程屏幕</td><td>电台屏幕实时画进浏览器、可存 PNG；一整块虚拟键盘，带「长按 / 长按不放 / 按住 SK1 / 按住 SK2」四个修饰勾选</td><td class="n">看屏任何固件都行；<b>按键要 KEY_INJECTION</b></td></tr>
+        <tr data-k="电台信息 固件版本"><td class="name">电台信息</td><td>机型、固件版本、编译日期、Flash 序列号、特性位（反显 / 扩展呼号库 / 语音提示）</td><td class="n">—</td></tr>
+        <tr data-k="VFO 只读"><td class="name">VFO</td><td>当前 VFO 状态，只读</td><td class="n">—</td></tr>
+        <tr data-k="电台操作 闪灯 重启 热点"><td class="name">电台操作</td><td>往电台屏幕上推文字（每行 ≤16 个 ASCII）、退出 CPS 屏、闪红/绿灯、保存设置、重启、进入热点模式</td><td class="n">—</td></tr>
+        <tr data-k="频段日志 开始记录 导出"><td class="name">频段日志</td><td>开始记录 / 停止 / 查状态 / 导出并解析</td><td class="n">BAND_LOG</td></tr>
+        <tr data-k="AES 密钥 密钥槽"><td class="name">AES 密钥</td><td>生成随机密钥、写 0–15 号密钥槽、设发射密钥槽（0 = 关闭加密发射）</td><td class="n">AES</td></tr>
+        <tr data-k="备份 导出 校准区 信道区"><td class="name">备份</td><td>按「区域 + 起始地址 + 长度」读任意区段存盘，另有 <b>校准区</b> / <b>信道区</b> 两个一键按钮</td><td class="n">—</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+
+  <div class="callout c-ok" style="margin-top:10px">
+    <span class="tag">写得安全</span>
+    <div><b>改信道走扇区读-改-写。</b>先把那 4 KB 扇区整个读下来<b>存一份备份</b>，只改目标字节，写回后<b>再读一遍逐字节比对</b> —— 发现任何计划外的改动直接报错，不会悄悄写坏码表。</div>
+  </div>
+
+  <div class="callout c-warn" style="margin-top:9px">
+    <span class="tag">不是视频</span>
+    <div><b>远程屏幕不走 JSON</b> —— 一帧 40 KB 像素 base64 之后 55 KB，直接让 <code>GET /api/mirror?scale=N</code> 回 PNG，<code>&lt;img src&gt;</code> 本来就免费干这件事。一帧读回约 <b>1.4 秒</b>，所以「自动刷新」是<b>每 2 秒一张，不是视频</b>。</div>
+  </div>
+
+  <div class="callout c-danger" style="margin-top:9px">
+    <span class="tag">做不到</span>
+    <div>OpenGD77 的串口协议里<b>没有</b>这些命令，控制端也给不了：<b>遥控 PTT 发射</b>、<b>接收音频回传电脑</b>、<b>实时改运行中的频率</b>（只能写 Flash 后重启）。<span class="note">命令通道只有：屏幕接管、保存设置、重启、闪灯、初始化编解码器、设时间、GPS 日志。能做收发控制的是<b>热点模式</b>（SK1 + 开机），那是另一套 MMDVM 协议，且只走 DMR。</span></div>
+  </div>
+
+  <div class="callout c-warn" style="margin-top:9px">
+    <span class="tag">串口独占</span>
+    <div><b>串口同一时间只能被一个程序占着。</b>控制端在跑的时候 CPS 连不上，反之亦然。另外 GPS 设成 <code>NMEA</code> 模式会占住串口，两边都连不上 —— 改回 <code>Off</code> 或 <code>On</code>。</div>
+  </div>
+</section>
+
 <section id="tools">
-  <h2><span class="num">13</span>工具箱</h2>
-  <p class="lede">全在 <code>tools/</code>。控制端双击根目录的 <code>启动控制端.bat</code>，浏览器开 <code>127.0.0.1:8390</code>。</p>
+  <h2><span class="num">14</span>工具箱</h2>
+  <p class="lede">全在 <code>tools/</code>。控制端单独一节，见 <a href="#panel">13 控制端</a>。</p>
   <div class="panel"><div class="tablewrap">
     <table class="wrapcells">
       <thead><tr><th>脚本</th><th>干什么</th></tr></thead>
@@ -1065,7 +1116,7 @@ python tools/package_fw.py build/openuv380-10w.bin   <i># 想用 CPS 刷才需�
         <tr data-k="flash.py 刷机 回读校验"><td class="n">flash.py</td><td><b>刷机 + 回读校验</b>（<code>--list</code> / <code>--dfu</code> / <code>--yes</code> / <code>--verify</code>）</td></tr>
         <tr data-k="sat.py 卫星 TLE 星历"><td class="n">sat.py</td><td>卫星星历：<code>list</code> / <code>dump</code> / <code>refresh</code> / <code>addfm</code></td></tr>
         <tr data-k="ogd77.py CPS 协议 读写"><td class="n">ogd77.py / ogd77_ctl.py / ogd77_write.py</td><td>CPS 协议：读任意区段 / 发命令 / 写信道</td></tr>
-        <tr data-k="控制端 server 浏览器"><td class="n">ogd77_server.py + ui/index.html</td><td>本地控制端 <code>127.0.0.1:8390</code></td></tr>
+        <tr data-k="控制端 server 浏览器"><td class="n">ogd77_server.py + ui/index.html</td><td><b>浏览器控制端</b>，见 <a href="#panel">上一节</a></td></tr>
         <tr data-k="抓屏 截图 screen 按键注入"><td class="n">ogd77_screen.py</td><td>抓屏（<b>任何固件都能抓</b>）+ 按键注入（需 KEY_INJECTION）</td></tr>
         <tr data-k="drive.py 自动 按键序列"><td class="n">drive.py</td><td>按一串键并每步截图，UI 改动自查就靠它</td></tr>
         <tr data-k="wf_preview 瀑布 配色 预览"><td class="n">wf_preview.py</td><td>从当前屏幕反查 level、渲染新旧配色对比，<b>不用刷机</b></td></tr>
@@ -1077,7 +1128,7 @@ python tools/package_fw.py build/openuv380-10w.bin   <i># 想用 CPS 刷才需�
 </section>
 
 <section id="pits">
-  <h2><span class="num">14</span>别再试了</h2>
+  <h2><span class="num">15</span>别再试了</h2>
   <p class="lede">这些都试过了，结论是死的。再碰一次只是重新花一遍时间。</p>
   <div class="panel">
 
