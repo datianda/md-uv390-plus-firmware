@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UV390 控制端</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#F1F0EC; --surface:#FFF; --surface-2:#F7F6F3;
+  --ink:#1B2430; --ink-2:#3D4856; --muted:#6D7886; --line:#DBD9D3; --line-2:#EAE8E3;
+  --accent:#C94A18; --accent-soft:#FBEAE2;
+  --ok:#2C7150; --ok-soft:#E4F0E9; --danger:#A9271F; --danger-soft:#F8E4E2;
+  --warn:#96650A; --warn-soft:#F8EFDC;
+  --sans:"Noto Sans SC",-apple-system,"Microsoft YaHei",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --ground:#13171C; --surface:#1B2027; --surface-2:#20262E;
+  --ink:#E7E9EC; --ink-2:#C2C8D0; --muted:#8B97A5; --line:#2B323B; --line-2:#242A32;
+  --accent:#FF7C48; --accent-soft:#3A2115;
+  --ok:#64C093; --ok-soft:#16281F; --danger:#F0776B; --danger-soft:#301917;
+  --warn:#DDAA4A; --warn-soft:#2C2314;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+     font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px;padding-block:0 56px}
+
+header{position:sticky;top:0;z-index:20;background:var(--ground);
+       border-bottom:1px solid var(--line)}
+.hd{max-width:1180px;margin:0 auto;padding:12px 18px;display:flex;
+    align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:17px;font-weight:700}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.on{background:var(--ok)} .dot.off{background:var(--danger)}
+#statusline{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.spacer{flex:1}
+
+button{font-family:var(--sans);font-size:13px;color:var(--ink);cursor:pointer;
+       background:var(--surface);border:1px solid var(--line);border-radius:7px;
+       padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover:not(:disabled){filter:brightness(1.08);color:#fff}
+button.danger{border-color:color-mix(in srgb,var(--danger) 45%,transparent);color:var(--danger)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.cols{display:grid;grid-template-columns:1fr 330px;gap:18px;margin-top:20px;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card + .card{margin-top:14px}
+.card h2{margin:0;padding:11px 14px;font-size:13px;font-weight:600;
+         border-bottom:1px solid var(--line-2);background:var(--surface-2);
+         display:flex;align-items:center;gap:8px}
+.card h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px;font-family:var(--mono)}
+.body{padding:13px 14px}
+.body.tight{padding:0}
+
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 10px;text-align:left;border-top:1px solid var(--line-2);white-space:nowrap}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+   border-top:0;background:var(--surface-2);font-weight:600;position:sticky;top:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+tr.sel{background:var(--accent-soft)}
+.tablewrap{max-height:520px;overflow:auto}
+
+label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+input,select{width:100%;font-family:var(--mono);font-size:13px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 9px}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.mirror-wrap{background:#000;border:1px solid var(--line);border-radius:6px;
+  padding:8px;display:flex;justify-content:center}
+#mirror{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.keypad button{padding:9px 4px}
+.chk{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);
+  white-space:nowrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.field{margin-bottom:9px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+
+.note{font-size:12px;color:var(--muted);margin:9px 0 0}
+.tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:1px 6px;
+     border-radius:3px;background:var(--accent-soft);color:var(--accent)}
+.msg{border-radius:8px;padding:10px 12px;font-size:12.5px;margin-top:11px;border:1px solid;
+     white-space:pre-wrap;font-family:var(--mono);line-height:1.55}
+.msg.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 35%,transparent);color:var(--ink-2)}
+.msg.err{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 35%,transparent);color:var(--ink-2)}
+.msg.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 35%,transparent);color:var(--ink-2)}
+.cant{font-size:12px;color:var(--muted);line-height:1.7}
+.cant b{color:var(--ink-2);font-weight:500}
+/* --- band occupancy heat map --- */
+.hm-wrap{position:relative;overflow-x:auto}
+#bl-canvas{display:block;max-width:100%;height:auto;border-radius:6px}
+.hm-tip{position:absolute;pointer-events:none;z-index:5;background:var(--surface);
+  border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-family:var(--mono);
+  font-size:11.5px;line-height:1.5;color:var(--ink);white-space:pre;
+  box-shadow:0 2px 10px rgba(0,0,0,.14)}
+.hm-legend{display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap}
+.hm-legend-label{font-size:11.5px;color:var(--muted)}
+.hm-ramp{display:inline-flex;height:10px;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.hm-ramp i{width:14px;height:100%;display:block}
+.hm-legend-scale{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:4px}
+.busy{position:fixed;inset:0;background:color-mix(in srgb,var(--ground) 72%,transparent);
+      display:flex;align-items:center;justify-content:center;z-index:50;
+      font-family:var(--mono);font-size:13px;color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <span class="dot" id="dot"></span>
+    <h1>UV390 控制端</h1>
+    <span id="statusline">正在连接…</span>
+    <span class="spacer"></span>
+    <button id="refresh">重新连接</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="cols">
+
+    <div>
+      <div class="card">
+        <h2>信道 <span class="hint" id="chcount"></span>
+          <span class="spacer" style="flex:1"></span>
+          <button id="reloadch">重新读取</button>
+        </h2>
+        <div class="body tight"><div class="tablewrap">
+          <table>
+            <thead><tr><th>#</th><th>名称</th><th>RX MHz</th><th>TX MHz</th>
+                       <th>RX 亚音</th><th>TX 亚音</th><th></th></tr></thead>
+            <tbody id="chbody"><tr><td colspan="7" style="color:var(--muted);padding:20px 12px">等待连接…</td></tr></tbody>
+          </table>
+        </div></div>
+      </div>
+
+      <div class="card">
+        <h2>修改信道 <span class="hint">Flash 扇区读-改-写 · 自动备份 · 写后逐字节校验</span></h2>
+        <div class="body">
+          <div class="field"><label>目标信道</label>
+            <select id="ed-index"><option value="">先在上表选一行</option></select></div>
+          <div class="grid2">
+            <div class="field"><label>名称 (ASCII，最长 16)</label><input id="ed-name" maxlength="16"></div>
+            <div class="field"><label>RX 频率 MHz</label><input id="ed-rx" placeholder="439.55000"></div>
+            <div class="field"><label>TX 频率 MHz</label><input id="ed-tx" placeholder="434.55000"></div>
+            <div class="field"><label>RX 亚音 Hz（留空=不改，none=清除）</label><input id="ed-rxtone" placeholder="none"></div>
+            <div class="field"><label>TX 亚音 Hz</label><input id="ed-txtone" placeholder="88.5"></div>
+          </div>
+          <div class="row">
+            <button class="primary" id="write">写入电台</button>
+            <button id="revert">恢复表单</button>
+          </div>
+          <p class="note">留空的字段不会被写入。写入前整个 4KB 扇区会先备份到 <code>backup\</code>，
+             写入后读回逐字节比对，发现任何计划外的改动会直接报错。</p>
+          <div id="edmsg"></div>
+        </div>
+      </div>
+
+      <div class="card" id="bl-card" hidden>
+        <h2>频段占用热力图 <span class="hint" id="bl-meta"></span></h2>
+        <div class="body">
+          <div class="hm-wrap">
+            <canvas id="bl-canvas" width="880" height="360"></canvas>
+            <div id="bl-tip" class="hm-tip" hidden></div>
+          </div>
+          <div class="hm-legend">
+            <span class="hm-legend-label">弱</span>
+            <span id="bl-ramp" class="hm-ramp"></span>
+            <span class="hm-legend-label">强</span>
+            <span class="hm-legend-scale" id="bl-scale"></span>
+          </div>
+          <p class="note" id="bl-note"></p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>远程屏幕 <span class="hint">读帧缓冲任何固件都行 · 按键需 ENABLE_KEY_INJECTION</span></h2>
+        <div class="body">
+          <div class="mirror-wrap"><img id="mirror" alt="电台屏幕" width="480" height="384"></div>
+          <div class="row" style="margin-top:10px">
+            <button id="mir-refresh">刷新</button>
+            <button id="mir-save">存 PNG</button>
+            <label class="chk"><input type="checkbox" id="mir-auto"> 自动刷新</label>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <label class="chk"><input type="checkbox" id="mir-long"> 长按</label>
+            <label class="chk"><input type="checkbox" id="mir-hold"> 长按不放</label>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <label class="chk"><input type="checkbox" id="mir-sk1"> 按住 SK1</label>
+            <label class="chk"><input type="checkbox" id="mir-sk2"> 按住 SK2</label>
+          </div>
+          <div class="keypad">
+            <button data-key="orange">SK 橙</button>
+            <button data-key="up">▲</button>
+            <button data-key="green" class="ok">绿 / 菜单</button>
+            <button data-key="left">◀</button>
+            <button data-key="down">▼</button>
+            <button data-key="right">▶</button>
+            <button data-key="rotary-">旋钮 −</button>
+            <button data-key="red" class="danger">红 / 返回</button>
+            <button data-key="rotary+">旋钮 +</button>
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+            <button data-key="star">*</button><button data-key="0">0</button><button data-key="hash">#</button>
+          </div>
+          <p class="note">一帧 40 KB，读一次约 1.4 秒，所以自动刷新是每 2 秒一张、不是视频。
+             按键走的是固件的正常按键队列，等于真的按了一下——
+             <b>菜单里绿键才是保存，红键是取消不保存</b>。</p>
+          <div id="mirmsg"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>电台信息</h2>
+        <div class="body"><table id="infotable"><tbody></tbody></table></div>
+      </div>
+
+      <div class="card">
+        <h2>VFO <span class="hint">只读</span></h2>
+        <div class="body"><table id="vfotable"><tbody></tbody></table></div>
+      </div>
+
+      <div class="card">
+        <h2>电台操作</h2>
+        <div class="body">
+          <div class="field"><label>在电台屏幕上显示（每行 ≤16 个 ASCII 字符）</label>
+            <input id="s1" placeholder="第 1 行"><div style="height:6px"></div>
+            <input id="s2" placeholder="第 2 行"><div style="height:6px"></div>
+            <input id="s3" placeholder="第 3 行"><div style="height:6px"></div>
+            <input id="s4" placeholder="第 4 行"></div>
+          <div class="row">
+            <button id="showtext">显示</button>
+            <button id="closescreen">退出 CPS 屏</button>
+          </div>
+          <div style="height:10px"></div>
+          <div class="row">
+            <button id="ledg">闪绿灯</button>
+            <button id="ledr">闪红灯</button>
+            <button id="save">保存设置</button>
+            <button class="danger" id="reboot">重启电台</button>
+          </div>
+          <div style="height:10px"></div>
+          <div class="row">
+            <button class="danger" id="hotspot">进入热点模式</button>
+          </div>
+          <p class="note">发一个 <code>E0</code> 开头的 MMDVM 帧即可切换，不用按住 SK1 开机。
+             <b>前提是先把 <code>Options → General Options → Hotspot</code> 从
+             <code>Off</code> 改成 <code>MMDVM</code></b>（配 Pi-Star / MMDVMHost）或
+             <code>BlueDV</code>。还是 <code>Off</code> 的话电台只会回一个 CPS 的 ACK。
+             切过去之后本控制端就连不上了，要退出得重启电台。</p>
+          <div id="ctlmsg"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>频段日志 <span class="hint">需 ENABLE_BAND_LOG 固件</span></h2>
+        <div class="body">
+          <div class="row">
+            <button class="primary" id="bl-start">开始记录</button>
+            <button id="bl-stop">停止</button>
+            <button id="bl-status">查状态</button>
+          </div>
+          <div style="height:10px"></div>
+          <div class="grid2">
+            <div class="field"><label>导出长度（字节）</label><input id="bl-len" value="0x20000"></div>
+            <div class="field"><label>&nbsp;</label>
+              <button id="bl-export" style="width:100%">导出并解析</button></div>
+          </div>
+          <p class="note">电台在 VFO 下扫描（长按 <code>#</code>）时，每扫完一轮写一条记录。
+             导出走 CPS 协议，每次 32 字节，<b>128KB 约要一分钟</b>，先导一小段看看。</p>
+          <div id="blmsg"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>AES 密钥 <span class="hint">需 ENABLE_AES 固件</span></h2>
+        <div class="body">
+          <div class="grid2">
+            <div class="field"><label>密钥槽 (0-15)</label>
+              <input id="aes-slot" value="1"></div>
+            <div class="field"><label>&nbsp;</label>
+              <button id="aes-gen" style="width:100%">生成随机密钥</button></div>
+          </div>
+          <div class="field"><label>AES-256 密钥（64 个十六进制字符）</label>
+            <input id="aes-key" placeholder="留空并点上面的按钮可自动生成" spellcheck="false"></div>
+          <div class="row"><button class="primary" id="aes-write">写入密钥槽</button></div>
+
+          <div style="height:14px"></div>
+          <div class="grid2">
+            <div class="field"><label>发射密钥槽（0 = 关闭加密发射）</label>
+              <input id="aes-txkey" value="0"></div>
+            <div class="field"><label>&nbsp;</label>
+              <button class="danger" id="aes-settx" style="width:100%">设置发射密钥</button></div>
+          </div>
+          <p class="note">写入密钥本身不会开启加密发射 —— 发射密钥槽保持 <code>0</code> 时，
+             电台能<b>解密收到的</b>加密信号，但自己仍然发明文。
+             加密话音在多数国家的业余频段上不合法，仅限有牌照的商用/PMR 频段。</p>
+          <div id="aesmsg"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>备份</h2>
+        <div class="body">
+          <div class="grid2">
+            <div class="field"><label>区域</label><select id="bk-bank">
+              <option value="flash">Flash</option><option value="eeprom">EEPROM (别名)</option>
+              <option value="rom">MCU ROM</option><option value="security">安全寄存器</option>
+            </select></div>
+            <div class="field"><label>长度</label><input id="bk-len" value="0x400"></div>
+          </div>
+          <div class="field"><label>起始地址</label><input id="bk-addr" value="0x8f000"></div>
+          <div class="row">
+            <button id="dump">导出到 backup\</button>
+            <button id="preset-cal">校准区</button>
+            <button id="preset-ch">信道区</button>
+          </div>
+          <div id="bkmsg"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>做不到的事</h2>
+        <div class="body"><p class="cant">
+          OpenGD77 的串口协议里<b>没有</b>这些命令，所以本控制端也给不了：<br>
+          · <b>遥控 PTT 发射</b><br>
+          · <b>接收音频回传电脑</b><br>
+          · <b>实时改运行中的频率</b>（只能写 Flash 后重启）<br><br>
+          协议的命令通道只有：屏幕接管、保存设置、重启、闪灯、初始化编解码器、设时间、GPS 日志。
+          能做收发控制的是<b>热点模式</b>（SK1+开机），那是另一套 MMDVM 协议，只走 DMR。
+        </p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="busy" id="busy" style="display:none">与电台通信中…</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let CHANNELS = [], selected = null;
+
+function busy(on, text){ const b=$("#busy"); b.style.display = on?"flex":"none";
+  if(text) b.textContent = text; }
+
+async function call(path, body){
+  busy(true, (body ? "写入 / 通信中…" : "读取中…") + "（点此可强制取消）");
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), body ? 180000 : 60000);
+  const onClick = () => ctl.abort();
+  $("#busy").addEventListener("click", onClick, {once:true});
+  try{
+    const r = await fetch(path, Object.assign({signal: ctl.signal}, body ? {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {}));
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "未知错误");
+    return j.data;
+  } catch(e){
+    if(e.name === "AbortError") throw new Error("请求被取消或超时。电台可能正忙，或串口被别的程序占用。");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    $("#busy").removeEventListener("click", onClick);
+    busy(false);
+  }
+}
+
+// A script error used to leave the page frozen on "正在连接…" with an
+// invisible overlay swallowing every click. Surface it instead.
+window.addEventListener("error", e => {
+  $("#dot").className = "dot off";
+  $("#statusline").textContent = "页面脚本出错: " + (e.message || e.error);
+  busy(false);
+});
+
+function msg(el, kind, text){ $(el).innerHTML =
+  `<div class="msg ${kind}">${text.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div>`; }
+
+function fmtTone(t){ return (t===null||t===undefined) ? "—" : t.toFixed(1); }
+function fmtFreq(f){ return (f===null||f===undefined) ? "—" : f.toFixed(5); }
+
+function rowsTable(el, pairs){
+  $(el).querySelector("tbody").innerHTML = pairs.map(([k,v]) =>
+    `<tr><td style="color:var(--muted)">${k}</td><td class="n">${v}</td></tr>`).join("");
+}
+
+async function connect(){
+  try{
+    const d = await call("/api/status");
+    if(!d.connected){
+      $("#dot").className = "dot off";
+      $("#statusline").textContent = d.reason;
+      return false;
+    }
+    $("#dot").className = "dot on";
+    const i = d.info;
+    $("#statusline").textContent = `${d.port} · ${i.radio_name} · fw ${i.firmware}`;
+    rowsTable("#infotable", [
+      ["型号", i.radio_name], ["固件", i.firmware], ["编译时间", i.build_date],
+      ["Flash 芯片", i.flash_serial], ["特性位", i.features],
+      ["语音提示包", i.voice_prompts_loaded ? "已装" : "未装"],
+    ]);
+    return true;
+  }catch(e){
+    $("#dot").className = "dot off";
+    $("#statusline").textContent = String(e.message || e);
+    return false;
+  }
+}
+
+async function loadChannels(){
+  try{
+    const d = await call("/api/channels");
+    CHANNELS = d.channels;
+    $("#chcount").textContent = `共 ${CHANNELS.length} 个`;
+    $("#chbody").innerHTML = CHANNELS.map(c => `
+      <tr data-i="${c.index}">
+        <td class="n">${c.number}</td>
+        <td>${c.name}</td>
+        <td class="n">${fmtFreq(c.rx)}</td>
+        <td class="n">${fmtFreq(c.tx)}</td>
+        <td class="n">${fmtTone(c.rxtone)}</td>
+        <td class="n">${fmtTone(c.txtone)}</td>
+        <td><button data-edit="${c.index}">编辑</button></td>
+      </tr>`).join("");
+    $("#ed-index").innerHTML = '<option value="">先在上表选一行</option>' +
+      CHANNELS.map(c => `<option value="${c.index}">${c.number} — ${c.name}</option>`).join("");
+    $("#chbody").querySelectorAll("[data-edit]").forEach(b =>
+      b.onclick = () => pick(Number(b.dataset.edit)));
+  }catch(e){ $("#chbody").innerHTML =
+    `<tr><td colspan="7" style="color:var(--danger);padding:16px 12px">${e.message}</td></tr>`; }
+}
+
+function pick(index){
+  selected = CHANNELS.find(c => c.index === index);
+  if(!selected) return;
+  $("#ed-index").value = String(index);
+  $("#ed-name").value = selected.name;
+  $("#ed-rx").value = fmtFreq(selected.rx);
+  $("#ed-tx").value = fmtFreq(selected.tx);
+  $("#ed-rxtone").value = selected.rxtone === null ? "none" : selected.rxtone;
+  $("#ed-txtone").value = selected.txtone === null ? "none" : selected.txtone;
+  document.querySelectorAll("#chbody tr").forEach(tr =>
+    tr.classList.toggle("sel", Number(tr.dataset.i) === index));
+  $("#edmsg").innerHTML = "";
+}
+
+async function loadVfo(){
+  try{
+    const d = await call("/api/vfo");
+    rowsTable("#vfotable", [
+      ["VFO A RX", fmtFreq(d.vfo.A.rx)], ["VFO A TX", fmtFreq(d.vfo.A.tx)],
+      ["VFO B RX", fmtFreq(d.vfo.B.rx)], ["VFO B TX", fmtFreq(d.vfo.B.tx)],
+    ]);
+  }catch(e){ rowsTable("#vfotable", [["错误", e.message]]); }
+}
+
+$("#refresh").onclick = async () => { if(await connect()){ loadChannels(); loadVfo(); } };
+$("#reloadch").onclick = loadChannels;
+$("#ed-index").onchange = e => e.target.value && pick(Number(e.target.value));
+$("#revert").onclick = () => selected && pick(selected.index);
+
+$("#write").onclick = async () => {
+  const idx = $("#ed-index").value;
+  if(idx === ""){ msg("#edmsg","err","先选一个信道"); return; }
+  const cur = CHANNELS.find(c => c.index === Number(idx));
+  const body = {index: Number(idx)};
+  const form = {name:$("#ed-name").value.trim(), rx:$("#ed-rx").value.trim(),
+                tx:$("#ed-tx").value.trim(), rxtone:$("#ed-rxtone").value.trim(),
+                txtone:$("#ed-txtone").value.trim()};
+  const orig = {name:cur.name, rx:fmtFreq(cur.rx), tx:fmtFreq(cur.tx),
+                rxtone:cur.rxtone===null?"none":String(cur.rxtone),
+                txtone:cur.txtone===null?"none":String(cur.txtone)};
+  const changed = [];
+  for(const k of ["name","rx","tx","rxtone","txtone"]){
+    if(form[k] !== "" && form[k] !== orig[k]){ body[k] = form[k]; changed.push(k); }
+  }
+  if(!changed.length){ msg("#edmsg","warn","没有任何字段被改动"); return; }
+  if(!confirm(`将写入信道 ${cur.number} (${cur.name})\n\n改动字段: ${changed.join(", ")}\n\n` +
+              `这会擦写并重写一个 4KB Flash 扇区。继续？`)) return;
+  try{
+    const d = await call("/api/channel", body);
+    msg("#edmsg","ok",
+      `写入成功并已校验\n` +
+      changed.map(k => `  ${k}: ${JSON.stringify(d.before[k])}  ->  ${JSON.stringify(d.after[k])}`).join("\n") +
+      `\n\n扇区其余字节未变动。电台需重启才会显示新内容。`);
+    await loadChannels(); pick(Number(idx));
+  }catch(e){ msg("#edmsg","err","写入失败：" + e.message + "\n\n扇区备份在 backup\\ 下，可用它还原。"); }
+};
+
+$("#showtext").onclick = async () => {
+  const lines = ["#s1","#s2","#s3","#s4"].map(s => $(s).value);
+  try{ await call("/api/screen", {lines}); msg("#ctlmsg","ok","已显示在电台屏幕上"); }
+  catch(e){ msg("#ctlmsg","err",e.message); }
+};
+$("#closescreen").onclick = async () => {
+  try{ await call("/api/screen/close", {}); msg("#ctlmsg","ok","已退出 CPS 屏"); }
+  catch(e){ msg("#ctlmsg","err",e.message); }
+};
+$("#ledg").onclick = async () => { try{ await call("/api/led",{color:"green",times:4});
+  msg("#ctlmsg","ok","绿灯闪了 4 下"); }catch(e){ msg("#ctlmsg","err",e.message); } };
+$("#ledr").onclick = async () => { try{ await call("/api/led",{color:"red",times:4});
+  msg("#ctlmsg","ok","红灯闪了 4 下"); }catch(e){ msg("#ctlmsg","err",e.message); } };
+$("#save").onclick = async () => { try{ await call("/api/command",{action:"save"});
+  msg("#ctlmsg","ok","设置和 VFO 已保存"); }catch(e){ msg("#ctlmsg","err",e.message); } };
+$("#reboot").onclick = async () => {
+  if(!confirm("重启电台？USB 会断开重新枚举，之后要点「重新连接」。")) return;
+  try{ await call("/api/command",{action:"reboot"});
+       msg("#ctlmsg","warn","已发送重启。等几秒后点「重新连接」。"); }
+  catch(e){ msg("#ctlmsg","err",e.message); }
+};
+
+$("#hotspot").onclick = async () => {
+  const warn = [
+    "切到 MMDVM 热点模式？",
+    "",
+    "切过去之后控制端就连不上电台了（CPS 协议在热点模式下不可用），",
+    "要退出得重启电台。",
+    "",
+    "之后由电脑上的 MMDVMHost / Pi-Star / BlueDV 接管收发。",
+  ].join("\n");
+  if(!confirm(warn)) return;
+  try{
+    const d = await call("/api/hotspot", {});
+    const detail = ["已发送 " + d.sent, "电台回应: " + d.reply, "", d.note].join("\n");
+    if(!d.switched){ msg("#ctlmsg","err", detail); return; }
+    msg("#ctlmsg","warn", detail);
+    $("#dot").className = "dot off";
+    $("#statusline").textContent = "已切至热点模式 — CPS 协议不可用";
+  }catch(e){ msg("#ctlmsg","err", e.message); }
+};
+
+// ---- band occupancy log -------------------------------------------------
+// RSSI is a magnitude, so the ramp is ONE hue, light->dark - never a rainbow.
+// (The radio's own waterfall keeps its rainbow; that is a different medium and
+// a long-standing convention there. This chart is read, not glanced at.)
+// Dark mode gets its own direction rather than an automatic flip: on a dark
+// ground the *lightest* step has to mean "strongest", or weak cells would be
+// the ones that stand out.
+const RAMP = ["#cde2fb","#b7d3f6","#9ec5f4","#86b6ef","#6da7ec","#5598e7","#3987e5",
+              "#2a78d6","#256abf","#1c5cab","#184f95","#104281","#0d366b"];
+let BL = null;   // last export: {records, samples, summary}
+
+function isDark(){
+  const t = document.documentElement.getAttribute("data-theme");
+  if(t === "dark") return true;
+  if(t === "light") return false;
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function rampFor(level){          // level 0..1
+  const dark = isDark();
+  const n = RAMP.length;
+  let i = Math.round(level * (n - 1));
+  i = Math.max(0, Math.min(n - 1, i));
+  return RAMP[dark ? (n - 1 - i) : i];
+}
+
+function drawHeatmap(){
+  const c = $("#bl-canvas");
+  if(!BL || !BL.samples.length){ $("#bl-card").hidden = true; return; }
+  $("#bl-card").hidden = false;
+
+  const rows = BL.samples, bins = rows[0].length;
+  const padL = 52, padB = 26, padT = 8, padR = 8;
+  const plotW = c.width - padL - padR, plotH = c.height - padT - padB;
+  const cw = plotW / bins, ch = plotH / rows.length;
+  const css = getComputedStyle(document.body);
+  const ink = css.getPropertyValue("--muted").trim() || "#888";
+  const surface = css.getPropertyValue("--surface").trim() || "#fff";
+
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = surface; ctx.fillRect(0,0,c.width,c.height);
+
+  // Newest at the top, matching the radio's own waterfall.
+  //
+  // The ramp is anchored at the MEDIAN, not at the minimum. Band noise swings
+  // over most of the useful range, so starting at the bottom of it paints the
+  // whole plot in speckle and a real carrier becomes one grain among thousands;
+  // an interrupted sweep also leaves a row padded with zeros, which would drag
+  // the low end to 0 on its own. Clamping at/below the median to the lightest
+  // step leaves a calm floor for the busy bins to stand out from - the same
+  // thing the radio's noise-floor control does for the sweep trace.
+  const flat = [];
+  rows.forEach(r => r.forEach(v => { if(v > 0) flat.push(v); }));
+  flat.sort((a,b) => a-b);
+  const lo = flat.length ? flat[Math.floor(flat.length/2)] : 0;
+  const hi = flat.length ? flat[Math.min(flat.length-1, Math.floor(flat.length*0.995))] : 1;
+  const span = Math.max(1, hi - lo);
+
+  for(let y=0; y<rows.length; y++){
+    for(let x=0; x<bins; x++){
+      ctx.fillStyle = rampFor(Math.max(0, Math.min(1, (rows[y][x]-lo)/span)));
+      ctx.fillRect(padL + x*cw, padT + y*ch, Math.ceil(cw), Math.ceil(ch));
+    }
+  }
+
+  // Axes stay recessive: thin, muted, and only where a label needs anchoring.
+  ctx.strokeStyle = ink; ctx.globalAlpha = .35; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+plotH);
+  ctx.lineTo(padL+plotW, padT+plotH); ctx.stroke(); ctx.globalAlpha = 1;
+
+  ctx.fillStyle = ink; ctx.font = "11px ui-monospace,Consolas,monospace";
+  const s = BL.summary;
+  ctx.textAlign = "left";
+  ctx.fillText(s.startMHz.toFixed(3), padL, c.height - 8);
+  ctx.textAlign = "right";
+  ctx.fillText(s.stopMHz.toFixed(3), padL+plotW, c.height - 8);
+  ctx.textAlign = "center";
+  ctx.fillText("MHz", padL + plotW/2, c.height - 8);
+  ctx.textAlign = "right";
+  ctx.fillText("新", padL - 6, padT + 10);
+  ctx.fillText("旧", padL - 6, padT + plotH - 2);
+
+  // The lightest steps sit close to the surface by design, so the numbers are
+  // carried by the legend and the tooltip rather than by colour alone.
+  $("#bl-ramp").innerHTML = RAMP.map((_,i) =>
+      `<i style="background:${rampFor(i/(RAMP.length-1))}"></i>`).join("");
+  $("#bl-scale").textContent = `RSSI ${lo} – ${hi}`;
+  $("#bl-meta").textContent = `${rows.length} 轮 × ${bins} bin`;
+  const t0 = s.firstEpoch ? new Date(s.firstEpoch*1000).toISOString().replace("T"," ").slice(0,19) : "无时间";
+  $("#bl-note").textContent =
+      `${t0} UTC 起 · 带 GPS 定位的记录 ${s.withFix}/${s.count} 条` +
+      (s.lat != null ? ` · 最后位置 ${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}` : "");
+
+  c._geom = {padL, padT, plotW, plotH, cw, ch, bins, rows};
+}
+
+$("#bl-canvas").addEventListener("mousemove", e => {
+  const c = $("#bl-canvas"), g = c._geom, tip = $("#bl-tip");
+  if(!g || !BL){ return; }
+  const r = c.getBoundingClientRect();
+  const sx = c.width / r.width, sy = c.height / r.height;
+  const px = (e.clientX - r.left) * sx, py = (e.clientY - r.top) * sy;
+  const bx = Math.floor((px - g.padL) / g.cw), by = Math.floor((py - g.padT) / g.ch);
+  if(bx < 0 || by < 0 || bx >= g.bins || by >= g.rows.length){ tip.hidden = true; return; }
+  const rec = BL.records[by];
+  const mhz = rec.startMHz + (bx * rec.stepHz) / 1e6;
+  const when = rec.epoch ? new Date(rec.epoch*1000).toISOString().replace("T"," ").slice(0,19) : "无时间";
+  tip.textContent = `${mhz.toFixed(4)} MHz\nRSSI ${g.rows[by][bx]}\n${when} UTC` +
+      (rec.hasFix ? `\n${rec.lat.toFixed(5)}, ${rec.lon.toFixed(5)}` : "\n无定位");
+  tip.hidden = false;
+  tip.style.left = Math.min(e.clientX - r.left + 12, r.width - 150) + "px";
+  tip.style.top = (e.clientY - r.top + 12) + "px";
+});
+$("#bl-canvas").addEventListener("mouseleave", () => { $("#bl-tip").hidden = true; });
+
+async function blRun(on){
+  try{
+    const d = await call("/api/bandlog/run", {on});
+    msg("#blmsg", d.accepted ? "ok" : "err",
+        [on ? "开始记录" : "停止记录", "电台回应: " + d.reply, d.note].filter(Boolean).join("\n"));
+    if(d.accepted){ blStatus(); }
+  }catch(e){ msg("#blmsg","err", e.message); }
+}
+async function blStatus(){
+  try{
+    const d = await call("/api/bandlog/status");
+    msg("#blmsg","ok", [`状态: ${d.running ? "记录中" : "已停止"}`,
+                        `已用 ${d.used} / ${d.capacity} 字节 (${d.percent}%)`,
+                        `约 ${Math.floor(d.used / 188)} 条记录`].join("\n"));
+  }catch(e){ msg("#blmsg","err", e.message); }
+}
+$("#bl-start").onclick = () => blRun(true);
+$("#bl-stop").onclick  = () => blRun(false);
+$("#bl-status").onclick = () => blStatus();
+$("#bl-export").onclick = async () => {
+  try{
+    const d = await call("/api/bandlog/export", {length: $("#bl-len").value.trim()});
+    BL = {records: d.records, samples: d.samples, summary: d.summary};
+    if(!d.summary.count){
+      msg("#blmsg","warn","读到了 " + d.bytes + " 字节，但没解析出记录。\n" +
+          "要么还没开始记录，要么导出长度不够。\n原始数据: " + d.path);
+      $("#bl-card").hidden = true;
+      return;
+    }
+    msg("#blmsg","ok", `解析出 ${d.summary.count} 条记录\n` +
+        `${d.summary.startMHz.toFixed(5)} - ${d.summary.stopMHz.toFixed(5)} MHz\n` +
+        `原始数据: ${d.path}`);
+    drawHeatmap();
+  }catch(e){ msg("#blmsg","err", e.message); }
+};
+if(window.matchMedia){
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if(BL){ drawHeatmap(); }   // dark mode gets its own ramp direction, so redraw
+  });
+}
+
+function randomHexKey(){
+  const b = new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return Array.from(b, x => x.toString(16).padStart(2,"0")).join("").toUpperCase();
+}
+$("#aes-gen").onclick = () => {
+  $("#aes-key").value = randomHexKey();
+  msg("#aesmsg","warn","已生成密钥，但还没写进电台。\n" +
+      "先把它记下来 —— 对方电台要用同一把密钥，页面刷新后这里不会保留。");
+};
+$("#aes-write").onclick = async () => {
+  const slot = $("#aes-slot").value.trim();
+  const key = $("#aes-key").value.replace(/[\s-]/g,"").toUpperCase();
+  if(!/^[0-9A-F]{64}$/.test(key)){ msg("#aesmsg","err","密钥必须是 64 个十六进制字符"); return; }
+  if(!confirm(["把密钥写入槽 " + slot + " ?", "",
+               "会覆盖该槽原有的密钥。", "这一步不会开启加密发射。"].join("\n"))) return;
+  try{
+    const d = await call("/api/aes/key", {keyid: Number(slot), key: key});
+    msg("#aesmsg", d.acked ? "ok" : "warn",
+        ["槽 " + d.keyid + " 写入完成",
+         "电台回应: " + d.reply,
+         d.acked ? "" : "没有收到响应 —— 固件可能没开 ENABLE_AES，或者串口被别的程序占着。",
+         "", "密钥（请自行保存）:", d.key].join("\n"));
+  }catch(e){ msg("#aesmsg","err", e.message); }
+};
+$("#aes-settx").onclick = async () => {
+  const t = Number($("#aes-txkey").value.trim());
+  const warn = t === 0
+    ? ["关闭加密发射？", "", "电台之后发明文，但仍能解密收到的加密信号。"].join("\n")
+    : ["用槽 " + t + " 加密发射？", "",
+       "之后这台电台发出去的话音都是加密的。",
+       "加密话音在多数国家的业余频段上不合法。"].join("\n");
+  if(!confirm(warn)) return;
+  try{
+    const d = await call("/api/aes/txkey", {txkey: t});
+    msg("#aesmsg", d.acked ? "ok" : "warn",
+        ["发射密钥槽 = " + d.txkey + "（" + (d.encrypted_tx ? "加密发射已开启" : "加密发射已关闭") + "）",
+         "电台回应: " + d.reply].join("\n"));
+  }catch(e){ msg("#aesmsg","err", e.message); }
+};
+
+$("#preset-cal").onclick = () => { $("#bk-bank").value="flash";
+  $("#bk-addr").value="0x8f000"; $("#bk-len").value="0x400"; };
+$("#preset-ch").onclick = () => { $("#bk-bank").value="flash";
+  $("#bk-addr").value="0x3780"; $("#bk-len").value="0x1c10"; };
+$("#dump").onclick = async () => {
+  try{
+    const d = await call("/api/backup", {bank:$("#bk-bank").value,
+      addr:$("#bk-addr").value, length:$("#bk-len").value, label:"dump"});
+    msg("#bkmsg","ok",`已导出 ${d.bytes} 字节\n${d.path}`);
+  }catch(e){ msg("#bkmsg","err",e.message); }
+};
+
+
+// ---- 远程屏幕 -------------------------------------------------------------
+// Deliberately NOT using call(): that throws a modal busy overlay over the page,
+// which is right for a flash write and wrong for a keypad you press twenty times.
+let mirBusy = false, mirTimer = null;
+
+async function mirrorRefresh(){
+  if(mirBusy) return;                       // one frame at a time - the port is serial
+  mirBusy = true;
+  try{
+    const r = await fetch("/api/mirror?scale=3&t=" + Date.now());
+    if(!r.ok) throw new Error(await r.text());
+    const blob = await r.blob();
+    const old = $("#mirror").src;
+    $("#mirror").src = URL.createObjectURL(blob);
+    if(old.startsWith("blob:")) URL.revokeObjectURL(old);
+    $("#mirmsg").innerHTML = "";
+  }catch(e){ msg("#mirmsg","err","抓屏失败: " + e.message); }
+  finally{ mirBusy = false; }
+}
+
+async function pressKey(name){
+  // "长按不放" is long-press with no release event. Needed for handlers that enter
+  // a mode on long-down and tear it back down on the release - VFO sweep is the one
+  // that matters: without it, long-# just opens the DTMF entry screen.
+  // SK1/SK2 are separate state from the keypad in the firmware, so they have to be
+  // sent WITH the key rather than pressed beforehand. "SK2 + 绿" is the save gesture
+  // in every settings screen, so without these nothing here could be made permanent.
+  const long = $("#mir-long").checked, hold = $("#mir-hold").checked;
+  const sk1 = $("#mir-sk1").checked, sk2 = $("#mir-sk2").checked;
+  try{
+    const r = await fetch("/api/key", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({key:name, long:long, hold:hold, sk1:sk1, sk2:sk2})});
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error);
+    // All four are one-shot modifiers, exactly like holding SK2 for one press.
+    $("#mir-long").checked = $("#mir-hold").checked = false;
+    $("#mir-sk1").checked = $("#mir-sk2").checked = false;
+    setTimeout(mirrorRefresh, 350);          // let the UI redraw before we look
+  }catch(e){ msg("#mirmsg","err","按键失败: " + e.message); }
+}
+
+document.querySelectorAll(".keypad button").forEach(b =>
+  b.onclick = () => pressKey(b.dataset.key));
+
+$("#mir-refresh").onclick = mirrorRefresh;
+$("#mir-auto").onchange = e => {
+  clearInterval(mirTimer); mirTimer = null;
+  if(e.target.checked){ mirrorRefresh(); mirTimer = setInterval(mirrorRefresh, 2000); }
+};
+$("#mir-save").onclick = () => {
+  const a = document.createElement("a");
+  a.href = $("#mirror").src;
+  a.download = "uv390-" + new Date().toISOString().replace(/[:.]/g,"-") + ".png";
+  a.click();
+};
+mirrorRefresh();
+
+(async () => { if(await connect()){ await loadChannels(); await loadVfo(); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root{color-scheme:light dark;
+        padding-top:env(safe-area-inset-top,0px);
+        padding-bottom:env(safe-area-inset-bottom,0px)}
+  body{margin:0; font:14px system-ui,-apple-system,sans-serif; background:#fafaf9}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+<title>UV390 操作卡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ground:#F1F0EC; --surface:#FFFFFF; --surface-2:#F7F6F3;
+    --ink:#1B2430; --ink-2:#3D4856; --muted:#6D7886; --line:#DBD9D3; --line-2:#EAE8E3;
+    --accent:#C94A18; --accent-soft:#FBEAE2;
+    --ok:#2C7150; --ok-soft:#E4F0E9;
+    --warn:#96650A; --warn-soft:#F8EFDC;
+    --danger:#A9271F; --danger-soft:#F8E4E2;
+    --key-green:#2F7D4E; --key-red:#B0362C; --key-sk1:#2B3138; --key-sk2:#2A5A9B;
+    --key-plain-bg:#EDEBE6; --key-plain-ink:#2B333D; --key-plain-line:#CFCCC5;
+    --sans:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+    --r:10px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#13171C; --surface:#1B2027; --surface-2:#20262E;
+      --ink:#E7E9EC; --ink-2:#C2C8D0; --muted:#8B97A5; --line:#2B323B; --line-2:#242A32;
+      --accent:#FF7C48; --accent-soft:#3A2115;
+      --ok:#64C093; --ok-soft:#16281F;
+      --warn:#DDAA4A; --warn-soft:#2C2314;
+      --danger:#F0776B; --danger-soft:#301917;
+      --key-green:#3F9A63; --key-red:#C9483C; --key-sk1:#414A54; --key-sk2:#3C74BE;
+      --key-plain-bg:#2A313A; --key-plain-ink:#DCE1E7; --key-plain-line:#3A424C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#13171C; --surface:#1B2027; --surface-2:#20262E;
+    --ink:#E7E9EC; --ink-2:#C2C8D0; --muted:#8B97A5; --line:#2B323B; --line-2:#242A32;
+    --accent:#FF7C48; --accent-soft:#3A2115;
+    --ok:#64C093; --ok-soft:#16281F;
+    --warn:#DDAA4A; --warn-soft:#2C2314;
+    --danger:#F0776B; --danger-soft:#301917;
+    --key-green:#3F9A63; --key-red:#C9483C; --key-sk1:#414A54; --key-sk2:#3C74BE;
+    --key-plain-bg:#2A313A; --key-plain-ink:#DCE1E7; --key-plain-line:#3A424C;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding-inline:18px; padding-block:0 64px}
+
+  /* ---------- header ---------- */
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+    background:color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-in{max-width:780px; margin:0 auto; padding-inline:18px; padding-block:12px 10px}
+  .brandline{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  h1{
+    margin:0; font-size:20px; font-weight:700; letter-spacing:-.01em;
+    text-wrap:balance;
+  }
+  .sub{font-family:var(--mono); font-size:11.5px; color:var(--muted); letter-spacing:.04em}
+  .navchips{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px}
+  .navchips a{
+    font-size:12px; text-decoration:none; color:var(--ink-2);
+    border:1px solid var(--line); border-radius:999px; padding:3px 10px;
+    background:var(--surface);
+  }
+  .navchips a:hover{border-color:var(--accent); color:var(--accent)}
+  .navchips a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  .searchrow{margin-top:9px}
+  #q{
+    width:100%; font-family:var(--sans); font-size:13.5px; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:8px 11px;
+  }
+  #q::placeholder{color:var(--muted)}
+  #q:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:transparent}
+
+  /* ---------- sections ---------- */
+  section{margin-top:34px; scroll-margin-top:170px}
+  h2{
+    margin:0 0 4px; font-size:16px; font-weight:700; letter-spacing:-.005em;
+    display:flex; align-items:center; gap:9px;
+  }
+  h2 .num{
+    font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent);
+    border:1px solid var(--accent); border-radius:4px; padding:0 5px; line-height:1.5;
+  }
+  .lede{margin:0 0 14px; color:var(--muted); font-size:13.5px}
+
+  .panel{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+    overflow:hidden;
+  }
+
+  /* ---------- key rows ---------- */
+  .rows{display:flex; flex-direction:column}
+  .row{
+    display:grid; grid-template-columns:minmax(120px,190px) 1fr; gap:12px;
+    padding:9px 13px; border-top:1px solid var(--line-2); align-items:baseline;
+  }
+  .row:first-child{border-top:0}
+  .row .k{display:flex; flex-wrap:wrap; gap:4px; align-items:center}
+  .row .d{font-size:13.5px; color:var(--ink-2)}
+  .row .d b{color:var(--ink); font-weight:500}
+  .row .d .note{display:block; color:var(--muted); font-size:12.5px; margin-top:1px}
+  @media (max-width:520px){
+    .row{grid-template-columns:1fr; gap:5px}
+  }
+
+  /* ---------- key caps ---------- */
+  .key{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:11.5px; font-weight:600; line-height:1;
+    min-width:24px; padding:5px 7px; border-radius:5px;
+    border:1px solid var(--key-plain-line); background:var(--key-plain-bg);
+    color:var(--key-plain-ink); white-space:nowrap;
+  }
+  .key.g{background:var(--key-green); border-color:var(--key-green); color:#fff}
+  .key.r{background:var(--key-red); border-color:var(--key-red); color:#fff}
+  .key.s1{background:var(--key-sk1); border-color:var(--key-sk1); color:#fff}
+  .key.s2{background:var(--key-sk2); border-color:var(--key-sk2); color:#fff}
+  .key.knob{border-radius:999px; padding-inline:9px}
+  .plus{font-family:var(--mono); font-size:11px; color:var(--muted); padding:0 1px}
+  .hold{
+    font-size:10.5px; font-family:var(--sans); color:var(--accent);
+    border:1px dashed var(--accent); border-radius:4px; padding:2px 5px; line-height:1;
+  }
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border-radius:var(--r); padding:12px 14px; font-size:13.5px; line-height:1.6;
+    border:1px solid; display:flex; gap:10px; align-items:flex-start;
+  }
+  .callout + .callout{margin-top:9px}
+  .callout .tag{
+    font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.06em;
+    padding:2px 6px; border-radius:4px; flex:none; margin-top:1px;
+  }
+  .c-warn{background:var(--warn-soft); border-color:color-mix(in srgb,var(--warn) 35%,transparent); color:var(--ink-2)}
+  .c-warn .tag{background:var(--warn); color:var(--ground)}
+  .c-danger{background:var(--danger-soft); border-color:color-mix(in srgb,var(--danger) 35%,transparent); color:var(--ink-2)}
+  .c-danger .tag{background:var(--danger); color:var(--ground)}
+  .c-ok{background:var(--ok-soft); border-color:color-mix(in srgb,var(--ok) 35%,transparent); color:var(--ink-2)}
+  .c-ok .tag{background:var(--ok); color:var(--ground)}
+
+  /* ---------- mapping table ---------- */
+  .map{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:0}
+  .map > div{padding:10px 13px; border-top:1px solid var(--line-2); font-size:13.5px}
+  .map > div:nth-child(-n+3){border-top:0}
+  .map .from{color:var(--muted)}
+  .map .arw{color:var(--accent); font-family:var(--mono); font-size:12px; padding-inline:4px}
+
+  /* ---------- steps ---------- */
+  ol.steps{margin:0; padding:0; list-style:none; counter-reset:s}
+  ol.steps li{
+    counter-increment:s; position:relative; padding:10px 13px 10px 40px;
+    border-top:1px solid var(--line-2); font-size:13.5px; color:var(--ink-2);
+  }
+  ol.steps li:first-child{border-top:0}
+  ol.steps li::before{
+    content:counter(s); position:absolute; left:13px; top:11px;
+    font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent);
+    width:18px; height:18px; border:1px solid var(--accent); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  ol.steps li b{color:var(--ink); font-weight:500}
+
+  /* ---------- band plan ---------- */
+  .band{padding:14px 13px}
+  .band + .band{border-top:1px solid var(--line-2)}
+  .band-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px}
+  .band-name{font-size:13.5px; font-weight:500}
+  .band-note{font-family:var(--mono); font-size:11px; color:var(--muted)}
+  .bar{
+    position:relative; height:30px; border-radius:5px; overflow:hidden;
+    background:var(--surface-2); border:1px solid var(--line);
+  }
+  .seg{position:absolute; top:0; bottom:0; display:flex; align-items:center; justify-content:center}
+  .seg span{
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.02em;
+    white-space:nowrap; padding:0 3px;
+  }
+  .seg.sat{background:color-mix(in srgb,var(--ok) 26%,transparent)}
+  .seg.sat span{color:var(--ok)}
+  .seg.avoid{background:color-mix(in srgb,var(--danger) 26%,transparent)}
+  .ticks{display:flex; justify-content:space-between; margin-top:4px}
+  .ticks span{font-family:var(--mono); font-size:10px; color:var(--muted)}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; padding:0 13px 13px}
+  .legend i{width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:-1px}
+  .legend span{font-size:12px; color:var(--muted)}
+
+  /* ---------- channel table ---------- */
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse; width:100%; font-size:12.5px}
+  th,td{padding:7px 10px; text-align:left; border-top:1px solid var(--line-2); white-space:nowrap}
+  th{
+    font-size:10.5px; font-weight:600; letter-spacing:.06em; color:var(--muted);
+    text-transform:uppercase; border-top:0; background:var(--surface-2);
+  }
+  td.n{font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink-2)}
+  td.name{font-weight:500}
+  .zn{
+    font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.05em;
+    padding:1px 6px; border-radius:3px; background:var(--accent-soft); color:var(--accent);
+  }
+  .pill{
+    font-family:var(--mono); font-size:10px; padding:1px 5px; border-radius:3px;
+    background:var(--danger-soft); color:var(--danger); font-weight:600;
+  }
+  .pill.dmr{background:var(--accent-soft); color:var(--accent)}
+
+  /* ---------- fix list ---------- */
+  .fix{padding:12px 13px; border-top:1px solid var(--line-2)}
+  .fix:first-child{border-top:0}
+  .fix .sym{font-size:13.5px; font-weight:500; margin-bottom:3px}
+  .fix .sym::before{content:"症状　"; font-family:var(--mono); font-size:10.5px; color:var(--muted); font-weight:600}
+  .fix .cause{font-size:13px; color:var(--ink-2)}
+  .fix .cause::before{content:"原因　"; font-family:var(--mono); font-size:10.5px; color:var(--muted); font-weight:600}
+  .fix .cure{font-size:13px; color:var(--ink-2); margin-top:3px}
+  .fix .cure::before{content:"处理　"; font-family:var(--mono); font-size:10.5px; color:var(--ok); font-weight:600}
+
+  .empty{padding:22px 13px; text-align:center; color:var(--muted); font-size:13px}
+  footer{
+    margin-top:38px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:12px; color:var(--muted); line-height:1.7;
+  }
+  code{font-family:var(--mono); font-size:.92em; background:var(--surface-2);
+       border:1px solid var(--line-2); border-radius:4px; padding:1px 4px}
+
+  /* ---------- feature cards ---------- */
+  .feat{padding:15px 13px; border-top:1px solid var(--line-2)}
+  .feat:first-child{border-top:0}
+  .feat-head{display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; margin-bottom:7px}
+  .feat-name{font-size:14.5px; font-weight:700; letter-spacing:-.005em}
+  .flag{
+    font-family:var(--mono); font-size:10.5px; font-weight:600; padding:2px 6px;
+    border-radius:4px; background:var(--surface-2); border:1px solid var(--line);
+    color:var(--ink-2); white-space:nowrap;
+  }
+  .flag.host{border-style:dashed; color:var(--muted)}
+  .st{
+    font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.05em;
+    padding:2px 6px; border-radius:3px; white-space:nowrap;
+  }
+  .st.ok{background:var(--ok-soft); color:var(--ok)}
+  .st.wait{background:var(--warn-soft); color:var(--warn)}
+  .st.gone{background:var(--danger-soft); color:var(--danger)}
+  .st.dev{background:var(--accent-soft); color:var(--accent)}
+  .feat p{margin:0 0 7px; font-size:13.5px; color:var(--ink-2)}
+  .feat p:last-child{margin-bottom:0}
+  .feat b{color:var(--ink); font-weight:600}
+  .lbl{
+    font-family:var(--mono); font-size:10.5px; font-weight:600; color:var(--muted);
+    letter-spacing:.05em; margin-right:5px;
+  }
+  .feat ul{margin:0 0 7px; padding-left:17px; font-size:13.5px; color:var(--ink-2)}
+  .feat ul li{margin:2px 0}
+  .feat ul li::marker{color:var(--muted)}
+
+  /* ---------- screenshots ---------- */
+  figure.shot{
+    margin:10px 0 0; border:1px solid var(--line); border-radius:8px;
+    overflow:hidden; background:var(--surface-2);
+  }
+  figure.shot img{
+    display:block; margin-inline:auto; background:#fff;
+    max-width:100%; max-height:440px; width:auto; height:auto;
+  }
+  figure.shot img.px{image-rendering:pixelated}
+  figure.shot figcaption{
+    font-size:12px; color:var(--muted); padding:7px 10px;
+    border-top:1px solid var(--line-2); line-height:1.55;
+  }
+  .shots{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; margin-top:10px}
+  .shots figure.shot{margin:0}
+
+  /* ---------- code blocks ---------- */
+  pre.cmd{
+    margin:9px 0 0; padding:10px 12px; overflow-x:auto;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
+    font-family:var(--mono); font-size:12px; line-height:1.65; color:var(--ink-2);
+  }
+  pre.cmd b{color:var(--accent); font-weight:600}
+  pre.cmd i{color:var(--muted); font-style:normal}
+
+  /* ---------- pit list ---------- */
+  .pit{padding:12px 13px; border-top:1px solid var(--line-2)}
+  .pit:first-child{border-top:0}
+  .pit .no{font-size:13.5px; font-weight:600; color:var(--ink)}
+  .pit .no::before{content:"别试　"; font-family:var(--mono); font-size:10.5px; color:var(--danger); font-weight:600}
+  .pit .why{font-size:13px; color:var(--ink-2); margin-top:3px}
+  .pit .why::before{content:"真相　"; font-family:var(--mono); font-size:10.5px; color:var(--muted); font-weight:600}
+
+  /* ---------- wrapping tables ---------- */
+  table.wrapcells td{white-space:normal}
+  table.wrapcells td.n{white-space:nowrap}
+
+  /* nav group label */
+  .navchips .grp{
+    font-family:var(--mono); font-size:10px; color:var(--muted); align-self:center;
+    letter-spacing:.06em; padding-left:3px; padding-right:1px;
+  }
+
+  .row .d a, .callout a{color:var(--accent)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brandline">
+      <h1>UV390 操作卡</h1>
+      <span class="sub">10W PLUS · GPS · 本地固件 daily md5 0eafd1e8 · 2026-09-20</span>
+    </div>
+    <nav class="navchips">
+      <a href="#map">键位差异</a>
+      <a href="#keys">主界面</a>
+      <a href="#scan">扫台</a>
+      <a href="#sat">打卫星</a>
+      <a href="#fix">排障</a>
+      <a href="#ch">我的信道</a>
+      <a href="#band">频段</a>
+      <a href="#danger">危险操作</a>
+      <span class="grp">工程</span>
+      <a href="#new">新功能</a>
+      <a href="#backup">备份</a>
+      <a href="#flash">刷机</a>
+      <a href="#build">编译</a>
+      <a href="#tools">工具箱</a>
+      <a href="#pits">别再试了</a>
+    </nav>
+    <div class="searchrow">
+      <input id="q" type="text" placeholder="搜按键或功能：静噪 / 频谱 / SK2 / 卫星 …" autocomplete="off">
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="map">
+  <h2><span class="num">01</span>键位差异</h2>
+  <p class="lede">官方手册按 GD-77 写，UV390 <b>没有左右方向键</b>。手册里每一句「按左/右方向键」都要换算。</p>
+  <div class="panel">
+    <div class="map">
+      <div class="from">手册写「左方向键」</div><div class="arw">→</div><div><span class="key">▼</span></div>
+      <div class="from">手册写「右方向键」</div><div class="arw">→</div><div><span class="key">▲</span></div>
+      <div class="from">手册写「上 / 下方向键」</div><div class="arw">→</div><div><span class="key knob">旋钮</span></div>
+      <div class="from">手册写「橙色键」</div><div class="arw">→</div><div><span class="key s1">SK1</span><span class="plus">+</span><span class="key g">绿</span></div>
+    </div>
+  </div>
+  <div class="callout c-warn" style="margin-top:10px">
+    <span class="tag">仅限主界面</span>
+    <div>以上换算<b>只在 VFO / 信道主界面成立</b>。进了菜单以后：<span class="key">▲</span><span class="key">▼</span> 上下移动，<span class="key knob">旋钮</span> 改数值（相当于 GD-77 的左右键）。</div>
+  </div>
+</section>
+
+<section id="keys">
+  <h2><span class="num">02</span>主界面速查</h2>
+  <p class="lede">VFO 与信道界面通用。SK1 是黑色侧键，SK2 是蓝色侧键。</p>
+  <div class="panel"><div class="rows">
+
+    <div class="row" data-k="切换 VFO 信道 红键"><div class="k"><span class="key r">红</span></div>
+      <div class="d"><b>VFO ↔ 信道</b> 切换</div></div>
+
+    <div class="row" data-k="VFO A B 长按红"><div class="k"><span class="hold">长按</span><span class="key r">红</span></div>
+      <div class="d">VFO <b>A ↔ B</b></div></div>
+
+    <div class="row" data-k="主菜单 绿键 menu"><div class="k"><span class="key g">绿</span></div>
+      <div class="d">进<b>主菜单</b></div></div>
+
+    <div class="row" data-k="快捷菜单 橙键 quick menu SK1"><div class="k"><span class="key s1">SK1</span><span class="plus">+</span><span class="key g">绿</span></div>
+      <div class="d"><b>快捷菜单</b><span class="note">哑音扫描、双守、VFO→新信道、滤波器都在这里</span></div></div>
+
+    <div class="row" data-k="信道详情 channel details 改频率"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span></div>
+      <div class="d"><b>信道详情</b>（改频率 / 亚音 / 功率 / 步进 / Rx Only）<span class="note">在详情里<b>再按一次</b> SK2+绿 = 存进码表</span></div></div>
+
+    <div class="row" data-k="FM DMR 模式切换"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key">✳</span></div>
+      <div class="d"><b>FM ↔ DMR</b> 切换</div></div>
+
+    <div class="row" data-k="时隙 带宽 星号"><div class="k"><span class="key">✳</span></div>
+      <div class="d">DMR：切<b>时隙</b>　FM：切 <b>25k ↔ 12.5k</b><span class="note">长按 ✳ 清除时隙覆盖</span></div></div>
+
+    <div class="row" data-k="静噪 squelch 沙沙声 噪声"><div class="k"><span class="key">▼</span><span class="plus">/</span><span class="key">▲</span></div>
+      <div class="d"><b>静噪</b>（仅 FM）：<span class="key">▼</span> 开大（出沙沙声）　<span class="key">▲</span> 收紧<span class="note">VFO 上改会记住；信道上改只是临时覆盖，要 SK2+绿 两次才存</span></div></div>
+
+    <div class="row" data-k="发射功率 power"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key">▲</span><span class="plus">/</span><span class="key">▼</span></div>
+      <div class="d">调<b>发射功率</b></div></div>
+
+    <div class="row" data-k="监听 monitor 强开静噪 收不到"><div class="k"><span class="hold">长按</span><span class="key s2">SK2</span></div>
+      <div class="d"><b>监听模式</b>：静噪全开 + 关掉亚音 / TG / TS / CC 全部滤波<span class="note">松手即恢复。排查「为什么收不到」的第一手段</span></div></div>
+
+    <div class="row" data-k="频谱 倒频 井号 spectrum"><div class="k"><span class="hold">长按</span><span class="key">#</span></div>
+      <div class="d">VFO 模式：<b>频谱扫描</b>　信道模式：<b>中继倒频</b><span class="note">VFO 下的倒频是 长按 SK1+SK2</span></div></div>
+
+    <div class="row" data-k="扫描 scan 长按上"><div class="k"><span class="hold">长按</span><span class="key">▲</span></div>
+      <div class="d">开始<b>扫描</b></div></div>
+
+    <div class="row" data-k="换信道 频率 旋钮"><div class="k"><span class="key knob">旋钮</span></div>
+      <div class="d">换<b>信道</b> / 改<b>频率</b></div></div>
+
+    <div class="row" data-k="切换 zone 分区"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key knob">旋钮</span></div>
+      <div class="d">快速切 <b>Zone</b></div></div>
+
+    <div class="row" data-k="输入频率 数字键"><div class="k"><span class="key">0…9</span></div>
+      <div class="d">VFO 下<b>直接输入频率</b><span class="note">输错按 ▼ 逐位删，红键取消</span></div></div>
+
+    <div class="row" data-k="私呼 private call"><div class="k"><span class="key">#</span><span class="key">#</span></div>
+      <div class="d">输入<b>私呼 DMR ID</b></div></div>
+
+    <div class="row" data-k="通话组 talkgroup TG"><div class="k"><span class="key">#</span><span class="plus">+</span><span class="key">TG号</span></div>
+      <div class="d">手动输入<b>通话组</b></div></div>
+
+    <div class="row" data-k="键盘锁 lock"><div class="k"><span class="key g">绿</span><span class="plus">再</span><span class="key">✳</span></div>
+      <div class="d"><b>键盘锁</b>　（<span class="key g">绿</span> 再 <span class="key">#</span> = PTT 锁）</div></div>
+
+    <div class="row" data-k="1750Hz 中继"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key">PTT</span></div>
+      <div class="d">FM 发射中发送 <b>1750Hz</b> 中继唤醒音</div></div>
+
+    <div class="row" data-k="QuickKey 快捷键 自定义"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key">0…9</span></div>
+      <div class="d"><b>QuickKey</b>：在菜单里按 = 绑定，回主界面按 = 跳转<span class="note">清除：主界面长按 SK2+该数字，等提示音</span></div></div>
+
+  </div></div>
+
+  <div class="callout c-ok" style="margin-top:10px">
+    <span class="tag">建议</span>
+    <div>先把 <b>Satellite</b> 绑到 <span class="key s2">SK2</span><span class="plus">+</span><span class="key">1</span>、<b>GPS</b> 绑到 <span class="key s2">SK2</span><span class="plus">+</span><span class="key">2</span>、<b>RSSI</b> 绑到 <span class="key s2">SK2</span><span class="plus">+</span><span class="key">3</span>。这三个你会天天用。</div>
+  </div>
+</section>
+
+<section id="scan">
+  <h2><span class="num">03</span>扫台找中继</h2>
+  <p class="lede">北京中继的公开数据是 2015 年的，还互相矛盾。用电台自己扫比查任何表都可靠。</p>
+
+  <div class="panel" style="margin-bottom:10px">
+    <ol class="steps">
+      <li><span class="key r">红</span> 切到 <b>VFO</b>，<span class="hold">长按</span><span class="key">▲</span> 进入扫描模式 — 屏幕上 TX 频率位置会换成扫描上下限</li>
+      <li>直接键入 <b>12 位数字</b>设范围，例如 <code>438000440000</code> = 438.000–440.000</li>
+      <li>再 <span class="hold">长按</span><span class="key">▲</span> 直到响，开始扫</li>
+      <li>扫到信号 → <span class="key s1">SK1</span><span class="plus">+</span><span class="key g">绿</span> → <b>Tone Scan</b>，电台自动测出实际亚音</li>
+      <li><span class="hold">长按</span><span class="key">▼</span> 退出扫描模式</li>
+    </ol>
+  </div>
+
+  <div class="panel"><div class="rows">
+    <div class="row" data-k="扫描 反向"><div class="k"><span class="key">▼</span></div><div class="d">反转扫描方向</div></div>
+    <div class="row" data-k="扫描 跳过"><div class="k"><span class="key">▲</span></div><div class="d">跳过当前，继续扫</div></div>
+    <div class="row" data-k="扫描 排除 nuisance"><div class="k"><span class="key">✳</span></div><div class="d">标记为 nuisance，本次扫描排除</div></div>
+    <div class="row" data-k="扫描 停止"><div class="k"><span class="key">其他键</span></div><div class="d">停止扫描</div></div>
+  </div></div>
+
+  <div class="callout c-warn" style="margin-top:10px">
+    <span class="tag">注意</span>
+    <div>Tone Scan 会<b>同时把 Rx 和 Tx 亚音都设上</b>。之后这个信道只有收到匹配亚音才出声。日常用中继更好的配法是：<b>Tx Tone 留着、Rx Tone 设回 None</b> — 发射带亚音，接收不挑。</div>
+  </div>
+
+  <div class="callout c-ok">
+    <span class="tag">瀑布图</span>
+    <div>本机固件的频谱扫描屏下方有 28 行<b>滚动瀑布历史</b>加频率标尺。底噪压制强度在 <b>Options → Theme Options → UI Style → WF gamma</b> 里调（Linear / Square / Cube，安静的波段用 Linear、吵的用 Square 或 Cube）。详见 <a href="#new">09 新功能</a>。</div>
+  </div>
+
+  <div class="callout c-warn">
+    <span class="tag">待实测</span>
+    <div>频谱扫描屏里手册写的是「左/右调中心频率、上/下调增益」，但没说明 UV390 上如何映射（本机无左右键）。大概率是 <span class="key knob">旋钮</span> 调中心、<span class="key">▲</span><span class="key">▼</span> 调增益，实际以屏幕提示为准。<span class="hold">长按</span><span class="key s2">SK2</span> 可暂停扫描并直接收听中心频率。</div>
+  </div>
+</section>
+
+<section id="sat">
+  <h2><span class="num">04</span>打卫星</h2>
+  <p class="lede">固件实时算多普勒并同时修正收发频率。UV390 是少数带真实 RTC 时钟的型号，预测精度 ±5 秒。</p>
+
+  <div class="panel" style="margin-bottom:10px">
+    <ol class="steps">
+      <li>星历：<code>python tools/sat.py refresh --yes</code>（只写 TLE，不动时钟），或 CPS → <code>Extras → OpenGD77 Support → Install satellite keps</code><span style="color:var(--muted)"> — CPS 那条<b>顺带会改写电台 RTC</b>，想顺便校时用它、不想动时钟用 sat.py</span></li>
+      <li><span class="key g">绿</span> → <b>Radio info → Location</b> 填坐标。北京用 <code>39.904</code> / <code>116.407</code> 足够<span style="color:var(--muted)"> — 南北半球 ▼/▲，东西半球 SK2+▼/▲</span></li>
+      <li><span class="key g">绿</span> → <b>Options → General Options → GPS</b> → <code>On</code> → <b>按绿键确认</b></li>
+      <li><span class="key g">绿</span> → <b>Satellite</b>，等几秒算完 24 小时过境预测</li>
+    </ol>
+  </div>
+
+  <div class="panel"><div class="rows">
+    <div class="row" data-k="卫星 选中 过境"><div class="k"><span class="key g">绿</span></div>
+      <div class="d">在总列表选中某次过境 → 进 <b>Polar 极坐标图</b><span class="note">右侧有黑条 = 这颗星现在就在天上</span></div></div>
+    <div class="row" data-k="卫星 切换子屏"><div class="k"><span class="key">▲</span><span class="plus">/</span><span class="key">▼</span></div>
+      <div class="d">Polar / 单星预测 / 实时数据 三屏循环</div></div>
+    <div class="row" data-k="卫星 换星"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key">▲</span><span class="plus">/</span><span class="key">▼</span></div>
+      <div class="d"><b>换一颗卫星</b></div></div>
+    <div class="row" data-k="卫星 频率 语音 APRS 信标"><div class="k"><span class="key">1</span><span class="key">2</span><span class="key">3</span></div>
+      <div class="d">选 <b>语音 / APRS / 信标</b> 频率<span class="note">仅在实时数据屏有效。信标是只收的，按 PTT 会被拒并响警告音</span></div></div>
+    <div class="row" data-k="卫星 静噪 功率"><div class="k"><span class="key knob">旋钮</span><span class="plus">/</span><span class="key s2">SK2</span><span class="plus">+</span><span class="key knob">旋钮</span></div>
+      <div class="d">调<b>静噪</b> / 调<b>功率</b><span class="note">单星预测屏上无效</span></div></div>
+    <div class="row" data-k="卫星 闹钟 alarm 休眠 已移除 布防"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span></div>
+      <div class="d"><b style="color:var(--danger)">卫星闹钟已删除</b>　上游这个手势在本机固件里<b>什么也不会发生</b><span class="note">理由见 <a href="#new">09 新功能</a> 里 <code>DISABLE_SAT_ALARM</code> 那条。过境预报、极坐标跟踪、多普勒修正全都还在</span></div></div>
+    <div class="row" data-k="SO-50 arm 74.4 启动音"><div class="k"><span class="key">PTT</span><span class="plus">+</span><span class="key s1">SK1</span></div>
+      <div class="d"><b>SO-50 启动音</b>：按住 PTT 的同时按 SK1，发 74.4Hz<span class="note">SO-50 转发器有 10 分钟定时器，过境开始时先唤醒它，之后用常规 67.0Hz</span></div></div>
+  </div></div>
+
+  <div class="callout c-warn" style="margin-top:10px">
+    <span class="tag">链路</span>
+    <div><b>原装天线打不了卫星。</b>多普勒和预测固件都替你算好了，但链路预算得靠天线 — 至少一根 Arrow / Elk 手持八木。另外 UV390 是<b>半双工</b>，发的时候听不到自己，这是单收信机手台的常态。</div>
+  </div>
+
+  <div class="callout c-warn">
+    <span class="tag">Keps</span>
+    <div>星历会过期：<b>每老一周，过境预报差约一分钟</b>，而电台既不知道自己的星历多旧、也从不说。跑 <code>python tools/sat.py list</code> 就会逐颗报它们的历元和已过去多少天。</div>
+  </div>
+</section>
+
+<section id="fix">
+  <h2><span class="num">05</span>排障</h2>
+  <p class="lede">这几天实际踩到的坑，按症状查。</p>
+  <div class="panel">
+    <div class="fix" data-k="ERROR Rx Only 只能收 发不出去">
+      <div class="sym">按 PTT 提示 <code>ERROR Rx Only</code></div>
+      <div class="cause">该信道的 <b>Rx Only</b> 标志是 Yes。码表里 <b>POEM 4 / SONATE-2 / UmKA-1</b> 三个是故意设的 —— 它们是只有下行、没有上行的信标星。</div>
+      <div class="cure"><span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span> → 翻到 Rx Only → 改 Off → <b>再按一次</b> SK2+绿 存盘。想自由试发射就按 <span class="key r">红</span> 切到 VFO。</div>
+    </div>
+    <div class="fix" data-k="听不到 沙沙声 没声音 静噪">
+      <div class="sym">完全听不到沙沙声</div>
+      <div class="cause">① 在 <b>DMR 信道</b>上 —— DMR 无信号时本来就是全静音，不是故障　② 静噪默认 45%　③ 信道设了 <b>Rx CTCSS</b>，它<b>优先级高于静噪</b>，调到全开也不会响</div>
+      <div class="cure">先 <span class="hold">长按</span><span class="key s2">SK2</span> 验证；FM 下按 <span class="key">▼</span> 开静噪；全局默认改 <code>Options → Radio Options → VHF/UHF Squelch</code></div>
+    </div>
+    <div class="fix" data-k="GPS Off None 不工作">
+      <div class="sym">GPS 一直显示 Off 或 None</div>
+      <div class="cause"><code>Off</code> = 检测到模块了、只是没开（<b>操作问题</b>）；<code>None</code> = 固件开机监听不到 9600bps 的 NMEA，判定<b>没装 GPS 硬件</b></div>
+      <div class="cure">Off → <code>Options → General Options → GPS</code> 转到 On，<b>必须按绿键确认</b>。None → 属硬件/协议问题，跟固件无关，自己编译也没用</div>
+    </div>
+    <div class="fix" data-k="CPS 连不上 COM 串口">
+      <div class="sym">CPS 连不上电台</div>
+      <div class="cause">GPS 被设成了 <code>NMEA</code> 模式 —— 它会占用 USB 串口发 GPS 数据</div>
+      <div class="cure">把 GPS 改回 <code>Off</code> 或 <code>On</code>。另外确认电台是<b>正常开机</b>状态，不是 DFU 模式</div>
+    </div>
+    <div class="fix" data-k="主题 颜色 重启 丢失 保存">
+      <div class="sym">改好的主题一重启就没了</div>
+      <div class="cause">主题编辑里<b>绿键只是临时生效</b></div>
+      <div class="cure"><span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span> 才写进去。<span class="key s1">SK1</span>+<span class="key g">绿</span> 临时恢复黑白，SK1+SK2+绿 永久恢复</div>
+    </div>
+    <div class="fix" data-k="S表 不准 信号强度">
+      <div class="sym">S 表读数感觉不对</div>
+      <div class="cause">出厂<b>没有校准接收灵敏度</b>，显示值是按「平均灵敏度机器」估算的 —— 手册自己写明了</div>
+      <div class="cure">要相对准一点的数值看 <code>Menu → RSSI</code>，那里给 dBm</div>
+    </div>
+  </div>
+</section>
+
+<section id="ch">
+  <h2><span class="num">06</span>我的信道</h2>
+  <p class="lede">26 个信道 / 3 个 Zone。卫星频率取自 CPS 的 <code>satellites.txt</code>，与电台星表一致；北京中继来自 CRAC 2015 年表，<b>全部待实测</b>。</p>
+  <div class="panel"><div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>信道</th><th>Zone</th><th>下行 RX</th><th>上行 TX</th><th>亚音 / 色码</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td class="name">AO-91</td><td><span class="zn">SAT</span></td><td class="n">145.960</td><td class="n">435.250</td><td class="n">67.0</td></tr>
+        <tr><td class="n">2</td><td class="name">AO-123</td><td><span class="zn">SAT</span></td><td class="n">435.400</td><td class="n">145.850</td><td class="n">67.0</td></tr>
+        <tr><td class="n">3</td><td class="name">IO-86</td><td><span class="zn">SAT</span></td><td class="n">435.880</td><td class="n">145.880</td><td class="n">88.5</td></tr>
+        <tr><td class="n">4</td><td class="name">ISS</td><td><span class="zn">SAT</span></td><td class="n">437.800</td><td class="n">145.990</td><td class="n">67.0</td></tr>
+        <tr><td class="n">5</td><td class="name">ISS APRS</td><td><span class="zn">SAT</span></td><td class="n">145.825</td><td class="n">145.825</td><td class="n">—</td></tr>
+        <tr><td class="n">6</td><td class="name">LilacSat</td><td><span class="zn">SAT</span></td><td class="n">437.200</td><td class="n">144.350</td><td class="n">—</td></tr>
+        <tr><td class="n">7</td><td class="name">POEM 4</td><td><span class="zn">SAT</span></td><td class="n">145.870</td><td class="n">—</td><td><span class="pill">仅收</span></td></tr>
+        <tr><td class="n">8</td><td class="name">POEM 4 APRS</td><td><span class="zn">SAT</span></td><td class="n">145.825</td><td class="n">145.825</td><td class="n">—</td></tr>
+        <tr><td class="n">9</td><td class="name">PO-101</td><td><span class="zn">SAT</span></td><td class="n">145.900</td><td class="n">437.500</td><td class="n">141.3</td></tr>
+        <tr><td class="n">10</td><td class="name">SO-50</td><td><span class="zn">SAT</span></td><td class="n">436.795</td><td class="n">145.850</td><td class="n">67.0 / arm 74.4</td></tr>
+        <tr><td class="n">11</td><td class="name">SO-124</td><td><span class="zn">SAT</span></td><td class="n">436.885</td><td class="n">145.925</td><td class="n">—</td></tr>
+        <tr><td class="n">12</td><td class="name">SONATE-2</td><td><span class="zn">SAT</span></td><td class="n">145.880</td><td class="n">—</td><td><span class="pill">仅收</span></td></tr>
+        <tr><td class="n">13</td><td class="name">SONATE-2 APRS</td><td><span class="zn">SAT</span></td><td class="n">145.825</td><td class="n">145.825</td><td class="n">—</td></tr>
+        <tr><td class="n">14</td><td class="name">UmKA-1</td><td><span class="zn">SAT</span></td><td class="n">437.625</td><td class="n">—</td><td><span class="pill">仅收</span></td></tr>
+        <tr><td class="n">40</td><td class="name">BR1KA DMR U1</td><td><span class="zn">BJ</span></td><td class="n">439.550</td><td class="n">434.550</td><td><span class="pill dmr">CC8 TS1</span></td></tr>
+        <tr><td class="n">41</td><td class="name">BR1KA DMR U2</td><td><span class="zn">BJ</span></td><td class="n">439.550</td><td class="n">434.550</td><td><span class="pill dmr">CC8 TS2</span></td></tr>
+        <tr><td class="n">42</td><td class="name">BR1KA DMR V1</td><td><span class="zn">BJ</span></td><td class="n">145.350</td><td class="n">144.750</td><td><span class="pill dmr">CC8 TS1</span></td></tr>
+        <tr><td class="n">43</td><td class="name">BR1KA DMR V2</td><td><span class="zn">BJ</span></td><td class="n">145.350</td><td class="n">144.750</td><td><span class="pill dmr">CC8 TS2</span></td></tr>
+        <tr><td class="n">44</td><td class="name">BR1BJ FM</td><td><span class="zn">BJ</span></td><td class="n">438.450</td><td class="n">432.950</td><td class="n">88.5</td></tr>
+        <tr><td class="n">45</td><td class="name">BJ 145.400</td><td><span class="zn">BJ</span></td><td class="n">145.400</td><td class="n">144.800</td><td class="n">88.5</td></tr>
+        <tr><td class="n">46</td><td class="name">BJ 439.050</td><td><span class="zn">BJ</span></td><td class="n">439.050</td><td class="n">430.550</td><td class="n">179.9</td></tr>
+        <tr><td class="n">47</td><td class="name">BJ 439.650</td><td><span class="zn">BJ</span></td><td class="n">439.650</td><td class="n">430.650</td><td class="n">79.7</td></tr>
+        <tr><td class="n">48</td><td class="name">BJ 439.750</td><td><span class="zn">BJ</span></td><td class="n">439.750</td><td class="n">434.750</td><td class="n">—</td></tr>
+        <tr><td class="n">60</td><td class="name">SIMP 438.500</td><td><span class="zn">SX</span></td><td class="n">438.500</td><td class="n">438.500</td><td class="n">—</td></tr>
+        <tr><td class="n">61</td><td class="name">SIMP 145.100</td><td><span class="zn">SX</span></td><td class="n">145.100</td><td class="n">145.100</td><td class="n">—</td></tr>
+        <tr><td class="n">62</td><td class="name">SIMP 434.750</td><td><span class="zn">SX</span></td><td class="n">434.750</td><td class="n">434.750</td><td class="n">—</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</section>
+
+<section id="band">
+  <h2><span class="num">07</span>频段</h2>
+  <p class="lede">按比例绘制。绿色是卫星段 —— 地面通联要避开，但打卫星正好该用这里。</p>
+  <div class="panel">
+    <div class="band">
+      <div class="band-head">
+        <span class="band-name">2m　144–146 MHz</span>
+        <span class="band-note">业余为唯一主要业务</span>
+      </div>
+      <div class="bar">
+        <div class="seg sat" style="left:90%; right:0"><span>卫星</span></div>
+      </div>
+      <div class="ticks"><span>144.0</span><span>145.0</span><span>145.8</span><span>146.0</span></div>
+    </div>
+    <div class="band">
+      <div class="band-head">
+        <span class="band-name">70cm　430–440 MHz</span>
+        <span class="band-note">业余为次要业务</span>
+      </div>
+      <div class="bar">
+        <div class="seg avoid" style="left:19%; width:3.4%"></div>
+        <div class="seg sat" style="left:50%; width:30%"><span>卫星 435–438</span></div>
+      </div>
+      <div class="ticks"><span>430</span><span>432</span><span>435</span><span>438</span><span>440</span></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:color-mix(in srgb,var(--ok) 45%,transparent)"></i>卫星段 145.8–146.0 / 435–438</span>
+      <span><i style="background:color-mix(in srgb,var(--danger) 45%,transparent)"></i>避开 431.9–432.24</span>
+    </div>
+  </div>
+  <div class="callout c-ok" style="margin-top:10px">
+    <span class="tag">核对</span>
+    <div>码表里 BR1BJ 上行 <b>432.950</b> 在 431.9–432.24 之外，合规。硬件本身的极限是 127–178 / 380–564 MHz（AT1846S 芯片限制），软件放不开。</div>
+  </div>
+</section>
+
+<section id="danger">
+  <h2><span class="num">08</span>危险操作</h2>
+  <p class="lede">别误碰。</p>
+  <div class="panel"><div class="rows">
+    <div class="row" data-k="恢复出厂 重置"><div class="k"><span class="key s2">SK2</span><span class="plus">+</span><span class="key">开机</span></div>
+      <div class="d"><b style="color:var(--danger)">恢复出厂设置</b> —— 清掉你的设置和主题</div></div>
+    <div class="row" data-k="DFU 刷机 固件"><div class="k"><span class="key s1">SK1</span><span class="plus">+</span><span class="key">PTT</span><span class="plus">+</span><span class="key">开机</span></div>
+      <div class="d">进 <b>DFU 刷机模式</b>（LED 红绿交替闪）<span class="note">刷固件靠它，正常模式下刷会把固件刷坏</span></div></div>
+    <div class="row" data-k="校准 calibration"><div class="k"><span class="key">Options → Calibration</span></div>
+      <div class="d"><b style="color:var(--danger)">别进去乱动</b> —— 会改掉出厂校准，功率和频偏全废</div></div>
+  </div></div>
+  <div class="callout c-danger" style="margin-top:10px">
+    <span class="tag">备份</span>
+    <div>校准数据存在<b>外挂 Flash 芯片</b>的 <code>0x8f000</code>，刷固件碰不到它。但它每台唯一、丢了补不回来 —— <code>Extras → OpenGD77 Support → Backup Flash</code>，16MB 要跑几分钟，中途别拔线。</div>
+  </div>
+  <div class="callout c-warn">
+    <span class="tag">执照</span>
+    <div>发射需持有效执照并使用本人呼号。考证前只收听、只翻菜单。</div>
+  </div>
+</section>
+
+<section id="new">
+  <h2><span class="num">09</span>这几天加的功能</h2>
+  <p class="lede">都是本地编译的，上游没有。<b>每个功能一个编译开关，默认关闭</b> —— 关掉时行为与官方固件等价，所以随时能退回去。下面每张截图都是从电台帧缓冲直接读出来的，不是示意图。</p>
+
+  <div class="panel" style="margin-bottom:12px"><div class="tablewrap">
+    <table class="wrapcells">
+      <thead><tr><th>开关</th><th>功能</th><th>日常固件</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td class="n">ENABLE_THEME_PRESET</td><td>配色预设</td><td class="n">带</td><td>实机验收</td></tr>
+        <tr><td class="n">ENABLE_INFO_DENSITY</td><td>信道信息行 + 功率染色</td><td class="n">带</td><td>实机验收</td></tr>
+        <tr><td class="n">ENABLE_UI_STYLE</td><td>界面样式 7 项可调</td><td class="n">带</td><td>实机验收</td></tr>
+        <tr><td class="n">ENABLE_WATERFALL</td><td>瀑布图 + 频率标尺</td><td class="n">带</td><td>实机验收</td></tr>
+        <tr><td class="n">ENABLE_FAST_SCAN</td><td>模拟扫描加快到 6 ms</td><td class="n">带</td><td>已编译</td></tr>
+        <tr><td class="n">ENABLE_DOPPLER_READOUT</td><td>多普勒偏移读数</td><td class="n">带</td><td>实机逐位核对</td></tr>
+        <tr><td class="n">ENABLE_BAND_LOG</td><td>频段占用日志器</td><td class="n">带</td><td>实机 14 条</td></tr>
+        <tr><td class="n">ENABLE_AES</td><td>AES-256 菜单</td><td class="n">带</td><td>菜单已确认，收发待实测</td></tr>
+        <tr><td class="n">ENABLE_DMR_DATA</td><td>DMR 短信</td><td class="n">带</td><td>菜单已确认，收发待实测</td></tr>
+        <tr><td class="n">DISABLE_SAT_ALARM</td><td><b>删掉</b>卫星闹钟</td><td class="n">带</td><td>已移除</td></tr>
+        <tr><td class="n">ENABLE_KEY_INJECTION</td><td>远程屏幕 + 按键注入</td><td class="n">不带</td><td>dev 专用，RAM 不够共存</td></tr>
+        <tr><td class="n">ENABLE_SPECTRUM</td><td>USB 驱动的扫频接收</td><td class="n">不带</td><td>dev 专用，未转正</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+
+  <div class="panel">
+
+  <div class="feat" data-k="配色预设 主题 颜色 Colour Mono Custom THEME_PRESET">
+    <div class="feat-head">
+      <span class="feat-name">配色预设</span>
+      <span class="flag">ENABLE_THEME_PRESET</span>
+      <span class="st ok">实机验收</span>
+    </div>
+    <p><span class="lbl">为什么</span>上游 <code>themeInitToDefaultValues()</code> 把 32 个主题项<b>全设成同一组前景色</b>，所以这块 160×128 彩屏出厂跑起来跟它移植来源的单色 GD-77 一模一样（实测整屏只有 2 种颜色）。固件里那些按语义命名的颜色 —— 电池绿/黄/红、S 表分段 —— 全被压成黑。</p>
+    <p><span class="lbl">怎么用</span><span class="key g">绿</span> → <b>Options → Theme Options</b> → 第一行 <code>Colour:Mono / Colour / Custom</code>。<span class="key">▲</span><span class="key">▼</span> 切换<b>立即预览</b>（这一页本身就是用这套颜色画的），<span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span> 存盘。</p>
+    <p><span class="lbl">限制</span><b>只改前景色</b>，这是设计决定不是偷懒。三个背景项都是陷阱：<code>BG_MENU_NAME</code> 染了会在彩色标题条上给每个字符打一个背景方块；<code>BG_HEADER_TEXT</code> 没有整条填充、染了就是「字底深块、字间露白」；<code>BG_MENU_ITEM_SELECTED</code> 选中行文字是反色画的，要染就得把菜单全部文字一起染。</p>
+    <p>预设表全是 <code>const</code>，<b>RAM 零开销</b>。不存「你选了哪个」，而是比对当前颜色反推 —— 所以手动改过任何一项就老实显示 <code>Custom</code>。</p>
+    <figure class="shot">
+      <img class="px" src="media/theme-mono-vs-colour.png" alt="Mono 与 Colour 预设对比">
+      <figcaption>同一屏、同一固件，只换预设。上 Mono（上游默认）整屏 2 色；下 Colour 6 色，且每种都有含义 —— S 表绿、S5 以上琥珀、电池有外框、TX 那行红而 RX 保持黑。</figcaption>
+    </figure>
+  </div>
+
+  <div class="feat" data-k="信道信息行 频率 差频 亚音 色码 功率染色 INFO_DENSITY">
+    <div class="feat-head">
+      <span class="feat-name">信道信息行 + 功率染色</span>
+      <span class="flag">ENABLE_INFO_DENSITY</span>
+      <span class="st ok">实机验收</span>
+    </div>
+    <p><span class="lbl">为什么</span>量出来的：FM 信道屏 <b>63%</b>、DMR 信道屏 <b>46%</b> 完全空白，最大空洞 y90–113 整整 24 行。更要命的是<b>信道屏根本不显示频率</b> —— 一个信道就只是一个名字，而「中继为什么打不开」要查的三件事全藏在 SK1 或两层菜单后面。</p>
+    <p><span class="lbl">显示什么</span>在那个洞里加一行紧凑信息，用次要文字色，不跟信道名抢：<b>下行频率 · 差频（或上行绝对频率）· 上行亚音（或 DMR 色码）</b>。</p>
+    <ul>
+      <li>亚音<b>优先显示 TX</b>，没有才退回 RX，用 <code>T</code> / <code>R</code> 前缀标明 —— RX 亚音只决定你听到什么，<b>TX 亚音才是开中继的那个</b>。</li>
+      <li>差频 ≥ 10 MHz 时改为直接显示上行绝对频率。跨波段算差频没意义（AO-91 会显示 <code>+289.290</code>，算术对但没用）。10 MHz 盖得住所有业余中继差频，最宽的 70cm 是 7.6 MHz。</li>
+      <li>表头功率按响度染色：<b>最高档红、次两档琥珀</b>。文字保留 —— 换成纯色块就不知道是 1W 还是 5W 了。</li>
+    </ul>
+    <div class="shots">
+      <figure class="shot">
+        <img class="px" src="media/info-fm-repeater.png" alt="FM 中继信道">
+        <figcaption><b>FM 中继</b>　<code>438.4500 −5.500 T88.5</code> —— 下行、差频、上行亚音。</figcaption>
+      </figure>
+      <figure class="shot">
+        <img class="px" src="media/info-dmr.png" alt="DMR 信道">
+        <figcaption><b>DMR</b>　<code>145.3500 −0.600 CC8</code>，表头也有 <code>C8</code>，两处一致。</figcaption>
+      </figure>
+      <figure class="shot">
+        <img class="px" src="media/info-sat.png" alt="卫星信道">
+        <figcaption><b>卫星（跨波段）</b>　<code>145.9600 &gt;435.2500 T67.0</code> —— 差频超 10 MHz，直接给上行频率。</figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:10px"><span class="lbl">附带修掉</span>DMR 表头的色码本来就在画（x 86–98），是被我自己的电池图标（当时定在 84–103）<b>无声擦掉</b>的。电池改成 10 px、挪到 x=72，两端各留 2 px，并用 <code>_Static_assert</code> 把越界钉死。表头 x 坐标图现在写进注释了：<code>0–17 模式 · 28–43 时隙 · 60–69 功率 · 72–83 电池 · 86–98 色码 · 108–125 GPS · 130–158 时钟</code>。</p>
+  </div>
+
+  <div class="feat" data-k="UI Style 界面样式 S表 高度 刻度 分段 电池图标 GPS图标 TX header WF gamma">
+    <div class="feat-head">
+      <span class="feat-name">界面样式可调（7 项）</span>
+      <span class="flag">ENABLE_UI_STYLE</span>
+      <span class="st ok">实机验收</span>
+    </div>
+    <p><span class="lbl">在哪</span><span class="key g">绿</span> → <b>Options → Theme Options → UI Style</b>。改完同样是 <span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span> 存盘。</p>
+    <div class="tablewrap" style="margin-top:8px">
+      <table class="wrapcells">
+        <thead><tr><th>项</th><th>取值</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td class="n">S-meter H</td><td class="n">4–10 px</td><td>S 表高度。默认 4 px 就是出厂那条细线</td></tr>
+          <tr><td class="n">S-mtr ticks</td><td class="n">On/Off</td><td>S1/S3/S5/S7/S9 刻度（上游写好了但被 <code>#if 0</code> 封着）</td></tr>
+          <tr><td class="n">S-mtr zones</td><td class="n">On/Off</td><td>按强度分段着色，不再是一条平色</td></tr>
+          <tr><td class="n">Batt icon</td><td class="n">On/Off</td><td>电池图标<b>取代</b> <code>87%</code> / <code>7.4V</code> 文字</td></tr>
+          <tr><td class="n">TX header</td><td class="n">On/Off</td><td>发射时整条表头染色</td></tr>
+          <tr><td class="n">GPS icon</td><td class="n">On/Off</td><td>信号格取代 <code>GPS</code> 三个字母：1 格搜星 / 2 格 2D / 3 格 3D</td></tr>
+          <tr><td class="n">WF gamma</td><td class="n">Linear / Square / Cube</td><td>瀑布图底噪压制强度，见下一条</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:9px"><span class="lbl">存在哪</span>自己的自定义数据块（类型 9），<b>不</b>挂在 THEME_DAY/NIGHT 后面 —— 那两块是按固定长度数组读回的，加长会让已经存过颜色的人升级后设置失效。独立块的好处是「不存在」天然等于「用默认值」，不用迁移、不用版本号。</p>
+    <p><span class="lbl">注意</span><code>WF gamma</code> 存 0 <b>必须继续表示 Square</b>：这个字节在选项存在之前一直是 0，而当时的行为就是平方律。改变 0 的含义会让已经保存过设置的人升级后显示无声变样。</p>
+    <figure class="shot">
+      <img class="px" src="media/uistyle-menu.png" alt="UI Style 菜单">
+      <figcaption>7 项全在一屏里。</figcaption>
+    </figure>
+  </div>
+
+  <div class="feat" data-k="瀑布图 waterfall 频谱 调色板 gamma 底噪">
+    <div class="feat-head">
+      <span class="feat-name">瀑布图（滚动频谱历史）</span>
+      <span class="flag">ENABLE_WATERFALL</span>
+      <span class="flag">ENABLE_FAST_SCAN</span>
+      <span class="st ok">实机验收</span>
+    </div>
+    <p><span class="lbl">在哪</span>VFO 下 <span class="hold">长按</span><span class="key">#</span> 进频谱扫描。布局实测：trace y10–49（40 px）/ 瀑布 y50–77（28 行）/ 频率标尺 y78–87。<b>标尺需要两个开关都开</b> —— 列到频率的换算函数住在 <code>ENABLE_FAST_SCAN</code> 那一块里。</p>
+    <p><span class="lbl">换掉了什么</span>原来是经典 jet 彩虹。彩虹对「量级」这种数据是<b>错的编码</b>：它既不是感知均匀的，<b>最亮的区域还在中段</b>。实测 2m 底噪占 level 5–38、中位 19，正好被涂成满饱和青绿，真载波（level 63）淹在里面。改成单色阶 <b>黑→蓝→白</b>，亮度随量级单调递增。</p>
+    <div class="shots">
+      <figure class="shot">
+        <img class="px" src="media/waterfall-before-after.png" alt="瀑布图调色板前后对比">
+        <figcaption><b>同一批真实数据走两套映射</b>（屏幕上每个瀑布像素都能反查回 level，所以不用刷机就能对比）。上：彩虹 + 线性；下：单色阶 + 平方律。</figcaption>
+      </figure>
+      <figure class="shot">
+        <img class="px" src="media/waterfall-jet.png" alt="旧彩虹调色板实机">
+        <figcaption>实机旧版：整片青绿，信号在哪看不出来。</figcaption>
+      </figure>
+      <figure class="shot">
+        <img class="px" src="media/waterfall-mono.png" alt="新调色板实机">
+        <figcaption>实机新版：底噪中位 7/63，峰值标记自己读出 437.7875 MHz。</figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:10px"><span class="lbl">gamma 三档</span><b>没有哪一档普遍更好</b>，这就是它该是选项的理由。同一批 4480 个真实样本算出来：</p>
+    <div class="tablewrap" style="margin-top:6px">
+      <table>
+        <thead><tr><th></th><th>底噪中位</th><th>75%</th><th>95%</th><th>峰值</th><th>用到色阶</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Linear</td><td class="n">8 (12%)</td><td class="n">24</td><td class="n">32</td><td class="n">46</td><td class="n">73%</td></tr>
+          <tr><td class="n">Square</td><td class="n">1 (1%)</td><td class="n">9</td><td class="n">16</td><td class="n">33</td><td class="n">52%</td></tr>
+          <tr><td class="n">Cube</td><td class="n">0 (0%)</td><td class="n">3</td><td class="n">8</td><td class="n">24</td><td class="n">38%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:8px">这天 70cm 很安静，Linear 用满色阶最合适；而之前那次底噪占到 30%，平方律才对。<b>band 安静就调 Linear，吵就调 Square / Cube。</b></p>
+    <p><span class="lbl">限制</span>历史只有 <b>28 行，约 28 次扫描</b>，而且<b>存不下更多</b> —— 160×28×2 = 8960 字节，RAM 只剩 1.5 KB 左右。全屏重绘时瀑布会被清成色阶零色（黑），不是坏了；原来清成背景色，浅色主题下留一大片白，要等 28 轮才填回来。</p>
+  </div>
+
+  <div class="feat" data-k="快速扫描 dwell 6ms FAST_SCAN">
+    <div class="feat-head">
+      <span class="feat-name">模拟扫描加快</span>
+      <span class="flag">ENABLE_FAST_SCAN</span>
+      <span class="st wait">已编译</span>
+    </div>
+    <p>在原有的 <b>Scan dwell time</b> 设置里增加 <code>20 / 15 / 10 / 6 ms</code> 四档。<b>只影响模拟扫描</b>；数字扫描取这个值和 DMR 时隙最小值中较大的那个，所以不受影响。电台上和 CHIRP 里都能选。</p>
+  </div>
+
+  <div class="feat" data-k="多普勒 Doppler 卫星 偏移 kHz">
+    <div class="feat-head">
+      <span class="feat-name">多普勒偏移读数</span>
+      <span class="flag">ENABLE_DOPPLER_READOUT</span>
+      <span class="st ok">实机逐位核对</span>
+    </div>
+    <p><span class="lbl">在哪</span>卫星实时数据屏底部那 18 行空白处，一行 <code>Dop R+9.11 T−3.03</code>：两个波段各被推了多少 <b>kHz</b>、往哪个方向。</p>
+    <p><span class="lbl">为什么有用</span>上面的修正后频率回答「调到多少」，这一行回答「<b>我在过境的哪一段</b>」—— 偏移开始时最大、最近点过零、之后反向。<b>光看修正后的频率看不出趋势。</b>而且这是这一屏上唯一能确认上行也在被修正的地方（两路量值按频率比不同、符号相反）。</p>
+    <div class="shots">
+      <figure class="shot">
+        <img class="px" src="media/doppler.png" alt="多普勒读数">
+        <figcaption>ISS 过境。<code>R+9.11</code> 表示下行被推高 9.11 kHz，<code>T−3.03</code> 上行被推低 3.03 kHz。</figcaption>
+      </figure>
+      <figure class="shot">
+        <img class="px" src="media/doppler-truncated.png" alt="被截断的多普勒读数">
+        <figcaption><b>自查揪出来的 bug</b>：缓冲区用了 <code>SCREEN_LINE_BUFFER_SIZE</code>(17)，而这行正好 17 字符，<code>snprintf</code> 悄悄砍掉最后一位（<code>T−2.9</code> 本该是 <code>T−2.91</code>）。看屏幕发现不了 —— 有数字有正负号，完全合理。</figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:10px">另一个只在特定数值下暴露的 bug：<code>"%+d"</code> 作用在 <code>delta/1000</code> 上，整数除法向零截断，<b>偏移绝对值小于 1 kHz 时一律显示正号</b> —— 而那正是最近点附近、最需要方向的那几十秒。两个都是拿原始字节核对算术才露的馅。</p>
+  </div>
+
+  <div class="feat" data-k="卫星 TLE 星历 刷新 sat.py TEVEL CelesTrak">
+    <div class="feat-head">
+      <span class="feat-name">卫星星历工具</span>
+      <span class="flag host">tools/sat.py（主机侧，不用改固件）</span>
+      <span class="st ok">实机验收</span>
+    </div>
+    <p><span class="lbl">真问题</span>不是「星表太小」—— 星表是码表里<b>25 个固定槽位</b>，槽位数改不了。真问题是 <b>TLE 会过期</b>：星历大约每老一周，过境预报就差一分钟，而电台既不知道自己的星历多旧、也从不说。</p>
+    <pre class="cmd">python tools/sat.py list              <i># 装了哪些、各自多旧</i>
+python tools/sat.py dump keps.txt     <i># 导出成标准两行 TLE</i>
+python tools/sat.py refresh <b>--yes</b>     <i># 从 CelesTrak 拉新星历写回</i>
+python tools/sat.py addfm   <b>--yes</b>     <i># 空槽位填 FM 转发卫星</i></pre>
+    <p style="margin-top:9px"><span class="lbl">做了什么</span>8 颗从 2.0–2.8 天旧刷新到 0.3–1.1 天旧；另外<b>加了 9 颗 TEVEL</b>（槽位 8–16）。写之前做了往返自检（编码→解码→跟源 TLE 逐字段比，4 颗 × 10 字段零不一致）；写之后电台重算的预报与刷新前只差<b>秒级和 1 度</b> —— 正是 2 天星历该有的漂移量级。</p>
+    <p><span class="lbl">频率怎么来的</span><b>不是回忆的，是两个独立来源交叉验证的</b>：SatNOGS DB 的收发信机记录与 AMSAT 的 FM 卫星频率页都给出上行 145.970 / 下行 436.400，一致才写。<b>TEVEL 的 CTCSS 留空</b> —— 两个来源都没写，而亚音错了是静默失败（照发、卫星不理、屏幕无提示），比留空更难排查。<b>没加 AO-27 和希望一号</b>：SatNOGS 标它们「active」指的是记录有效，不代表卫星还在工作，两颗都不在 AMSAT 当前活跃列表上。</p>
+    <p><span class="lbl">格式坑</span>TLE 在码表里是<b>半字节压缩</b>的，每字节两个 nibble 查表 <code>0123456789. +-*</code>，存的不是原始文本而是推演器要的字段、按列直接拼接无分隔符。还有：<code>loadKeps()</code> 在<b>第一个名字首字节为 0 的槽位就停</b>，新记录必须连续写在已有的之后，中间不能留空。</p>
+    <figure class="shot">
+      <img class="px" src="media/tevel-passes.png" alt="TEVEL 过境预报">
+      <figcaption>电台已经在为新加的 TEVEL 算预报了 —— 证明编码格式被推演器正确接受。</figcaption>
+    </figure>
+  </div>
+
+  <div class="feat" data-k="频段日志 bandlog 热力图 占用 flash">
+    <div class="feat-head">
+      <span class="feat-name">频段占用日志器</span>
+      <span class="flag">ENABLE_BAND_LOG</span>
+      <span class="st ok">实机验收</span>
+    </div>
+    <p><span class="lbl">做什么</span>把每一轮扫描（160 个 RSSI 采样 + 时间 + GPS 定位）记进 16 MB SPI flash 的<b>最后 2 MB</b>，循环覆盖。188 字节一条，约 <b>11150 条</b>。挂在扫描回卷点上，<b>零额外 RAM</b>（直接从 <code>vfoSweepSamples</code> 写出）。</p>
+    <p><span class="lbl">怎么用</span>双击 <code>启动控制端.bat</code> → 浏览器开 <code>127.0.0.1:8390</code> → 频段日志卡片启停、导出、看热力图。离线出 PNG 用 <code>tools/render_bandlog.py</code>（明暗两套）。</p>
+    <p><span class="lbl">限制</span>和 NMEA 定位日志<b>共用那 2 MB，运行时互斥</b> —— 同时只能开一个。</p>
+    <figure class="shot">
+      <img src="media/bandlog-heatmap.png" alt="频段占用热力图">
+      <figcaption>实机 14 轮，437.300–439.300 MHz。<b>437.4750 MHz 有稳定信号</b>（14 轮里 11 轮是峰值，RSSI 51–55 对底噪 45）—— 就是那条竖线。第一版热力图用 min/max 做标尺，被不完整扫描的 0 值绑架，整片深蓝读不出信息；改成<b>以中位数为下限</b>后底噪压平、信号才凸显。</figcaption>
+    </figure>
+  </div>
+
+  <div class="feat" data-k="AES 加密 DMR 短信 消息">
+    <div class="feat-head">
+      <span class="feat-name">AES-256 + DMR 短信</span>
+      <span class="flag">ENABLE_AES</span>
+      <span class="flag">ENABLE_DMR_DATA</span>
+      <span class="st wait">菜单已确认</span>
+    </div>
+    <p>来自 <code>dondch/OpenGD77-AES256</code> 这个 fork，不是我写的。菜单在电台上已经确认出现，<b>收发没测过</b> —— 要两台机器，而且发射得有呼号。密钥可以从控制端写入。</p>
+  </div>
+
+  <div class="feat" data-k="卫星闹钟 布防 移除 删除 DISABLE_SAT_ALARM 通知">
+    <div class="feat-head">
+      <span class="feat-name">卫星闹钟：已整个删掉</span>
+      <span class="flag">DISABLE_SAT_ALARM</span>
+      <span class="st gone">已移除</span>
+    </div>
+    <p><span class="lbl">删了什么</span>上游那套 <span class="key s2">SK2</span><span class="plus">+</span><span class="key g">绿</span> 布防、休眠省电、AOS 前 1 分钟唤醒响铃，连同我为它加的 <code>ENABLE_SAT_ALERT</code>，<b>全部编译掉</b>。卫星屏其余一切照旧：过境预报、极坐标跟踪、多普勒修正后的收发频率都在。</p>
+    <p><span class="lbl">为什么放弃</span>逻辑验到第 5 阶段都是对的，<b>卡在没法确认用户真的会被通知到</b>：彩屏平台上 <code>uiNotificationRefresh()</code> 推完屏会立刻把帧缓冲还原，<b>抓屏结构性看不见任何通知</b>。这不是 bug，是平台本来的样子 —— 意味着这个功能没法用远程手段验收。</p>
+    <p><span class="lbl">教训</span>做不出来的东西应该<b>自己喊停</b>，而不是一直测到用户喊停。</p>
+  </div>
+
+  <div class="feat" data-k="远程屏幕 按键注入 KEY_INJECTION dev">
+    <div class="feat-head">
+      <span class="feat-name">远程屏幕 + 按键注入</span>
+      <span class="flag">ENABLE_KEY_INJECTION</span>
+      <span class="st dev">dev 专用 · 日常固件不带</span>
+    </div>
+    <p>电脑读帧缓冲当显示器、发命令当键盘，整个 UI 自查闭环就靠它。控制端有「远程屏幕」卡片；命令行用 <code>tools/drive.py</code>（按一串键并每步截图）。</p>
+    <p><span class="lbl">为什么日常固件没有</span>它和 <code>ENABLE_AES + ENABLE_DMR_DATA</code> <b>一起开会 RAM 溢出 104 字节</b>，装不下。<b>所以跑日常固件时按键注入不可用</b>，只剩抓屏和刷机。以后再改 UI 要么你在键盘前，要么临时刷一版 DEV 再刷回来。</p>
+    <p><span class="lbl">关键修复</span>虚拟 SK1/SK2 —— 注入的是 <code>keys</code>，而 <code>BUTTONCHECK_DOWN(ev, BUTTON_SK2)</code> 读的是 <code>buttons</code>，两套状态。所以所有 <b>SK2+绿 存盘</b>的手势（配色预设、UI Style 都是）原本远程做不了，只能预览不能落盘。</p>
+    <figure class="shot">
+      <img class="px" src="media/daily-vfo.png" alt="日常固件 VFO 主界面">
+      <figcaption>日常固件刷完的实机画面。表头列段实测 <code>FM</code> 1–11 · <code>1W</code> 60–69 · 电池 72–83 · GPS 108–109 · 时钟 131–158，各就各位零重叠。</figcaption>
+    </figure>
+  </div>
+
+  </div>
+</section>
+
+<section id="backup">
+  <h2><span class="num">10</span>备份：什么救得回来，什么救不回来</h2>
+  <p class="lede">先分清三层存储，不然会在救不回来的东西上浪费时间，又漏掉真正不可再生的那份。</p>
+
+  <div class="panel" style="margin-bottom:10px"><div class="tablewrap">
+    <table class="wrapcells">
+      <thead><tr><th>存在哪</th><th>装着什么</th><th>丢了怎么办</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">MCU 内部 flash<br><span class="band-note">1 MB，STM32F405VG</span></td>
+          <td>bootloader（TYT 的，<code>0x08000000</code>）+ 固件（<code>0x0800C000</code> 起）</td>
+          <td><b>随便丢</b>。OpenGD77 随时重刷。<b>原厂固件备份不了</b>，见下。</td>
+        </tr>
+        <tr>
+          <td class="name">外挂 SPI flash<br><span class="band-note">16 MB</span></td>
+          <td><b>校准数据</b>（<code>0x8f000</code>）· 码表 · 主题 · UI Style · 卫星 TLE · 频段日志</td>
+          <td><b>校准每台唯一，丢了补不回来。</b>这才是必须备份的那份。</td>
+        </tr>
+        <tr>
+          <td class="name">Secure Registers<br><span class="band-note">768 字节</span></td>
+          <td>安全寄存器</td>
+          <td>已备份，顺手的事</td>
+        </tr>
+      </tbody>
+    </table>
+  </div></div>
+
+  <div class="callout c-ok">
+    <span class="tag">好消息</span>
+    <div><b>刷固件只写 MCU flash，碰不到外挂 flash。</b>所以换固件版本时，码表、主题、UI Style 设置、卫星星历、频段日志<b>全都不丢</b> —— 这几天刷了十几版，一次都没重新配过。</div>
+  </div>
+
+  <div class="callout c-danger" style="margin-top:9px">
+    <span class="tag">别浪费时间</span>
+    <div><b>原厂 TYT 固件是备份不出来的</b> —— MCU 开了读保护，DfuSe 读出来的是垃圾。而且只要刷过 OpenGD77，你 dump 到的就是 OpenGD77 自己。作者原话是所有支持的机型都没法备份官方固件。<b>不用自责，也不用再试。</b></div>
+  </div>
+
+  <h2 style="margin-top:20px; font-size:14px"><span class="num" style="border-color:var(--muted); color:var(--muted)">清单</span>你该有哪几份</h2>
+  <div class="panel"><div class="tablewrap">
+    <table class="wrapcells">
+      <thead><tr><th>备什么</th><th>什么时候</th><th>为什么</th></tr></thead>
+      <tbody>
+        <tr data-k="备份 整块 flash 原始 16MB"><td class="name">整块 16 MB SPI flash</td><td class="n"><b>动手改任何东西之前</b></td><td>里面有校准数据，<b>每台唯一、丢了补不回来</b>。这一份最要紧</td></tr>
+        <tr data-k="备份 校准 calibration"><td class="name">校准（单独那 1 KB）</td><td class="n">同上</td><td>小、好存、好核对。与整块 flash 重复，但多一份不吃亏</td></tr>
+        <tr data-k="备份 EEPROM"><td class="name">EEPROM</td><td class="n">同上</td><td>CPS 同一个窗口里一并备了</td></tr>
+        <tr data-k="备份 Secure Registers 安全寄存器"><td class="name">Secure Registers</td><td class="n">同上</td><td>768 字节，顺手的事</td></tr>
+        <tr data-k="备份 当前 存档"><td class="name">再一份整块 16 MB</td><td class="n">配好之后</td><td>把「改成现在这样」存下来。与出厂那份<b>分开放</b>，出事优先用出厂那份恢复校准</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+  <div class="callout c-ok" style="margin-top:10px">
+    <span class="tag">实测</span>
+    <div>这边核对过：刷了十几版固件、改过码表和星历之后，整块 flash 重新读回来，<b>校准区那 1 KB 与改动前的备份逐字节相同</b>；16 MB 里只有 <b>314 / 4096</b> 个 4 KB 扇区非空白。也就是说「刷固件不碰外挂 flash」这句话是真的，不只是论坛上的说法。</div>
+  </div>
+
+  <p class="lede" style="margin-top:10px"><b>备份别只放一个地方。</b>本地 + 网盘（或别的盘）各一份 —— 这几个文件是这台机器上真正不可再生的东西。</p>
+
+  <h2 style="margin-top:20px; font-size:14px"><span class="num" style="border-color:var(--muted); color:var(--muted)">怎么做</span>再备份一次</h2>
+  <div class="panel" style="margin-bottom:10px">
+    <ol class="steps">
+      <li>电台<b>正常开机</b>（不是 DFU），USB 连上，<b>关掉 CPS 和控制端</b> —— COM 口同一时间只能被一个程序占着</li>
+      <li>CPS → <code>Extras → OpenGD77 Support</code> → 依次备份 <b>Calibration</b>、<b>EEPROM</b>、<b>整块 Flash</b>，三个都要</li>
+      <li>16 MB 实测 <b>31 KB/s，约 9 分钟</b>。中途别拔线别关机</li>
+    </ol>
+  </div>
+  <p style="font-size:13.5px; color:var(--ink-2); margin:0 0 8px">命令行也行，读任意区段，不用开 CPS：</p>
+  <pre class="cmd">python -c "import sys;sys.path.insert(0,'tools');import ogd77;r=ogd77.Radio();
+r.dump(ogd77.FLASH, 0, 16*1024*1024, 'backup/flash.bin', 'flash');r.close()"</pre>
+
+  <div class="callout c-warn" style="margin-top:10px">
+    <span class="tag">要紧</span>
+    <div><b>备份走的是正常模式的 COM 口，跟 DFU 驱动无关。</b>我们把 DFU 设备换成 WinUSB 之后 CPS 的 <b>Firmware loader</b> 不能用了，但 <b>Backup Flash 照常能用</b> —— 那是两条不同的通道，别搞混。</div>
+  </div>
+</section>
+
+<section id="flash">
+  <h2><span class="num">11</span>刷机流程</h2>
+  <p class="lede">现在是我自己刷、自己回读校验，不用你在回路里 —— 但<b>进 DFU 这一步必须你手动按</b>，这台机器上没有别的办法。详细版在 <code>docs/flashing.md</code>。</p>
+
+  <div class="panel" style="margin-bottom:10px">
+    <ol class="steps">
+      <li><b>关机</b>，按住 <span class="key s1">SK1</span><span class="plus">+</span><span class="key">PTT</span> 再<b>开机</b> → 进 DFU。<b>屏幕不亮是正常的</b>，DFU 没有界面 —— 别拿屏幕判断，看设备管理器里有没有冒出那个设备，或者让我跑 <code>flash.py --list</code></li>
+      <li><code>python tools/flash.py 某个.bin</code> —— <b>预检，不写入</b>。确认认得到设备、镜像合法</li>
+      <li><code>python tools/flash.py 某个.bin <b>--yes</b></code> —— 真刷。合并 codec、加密、下载，一分钟内</li>
+      <li><code>python tools/flash.py 某个.bin <b>--verify</b></code> —— 从 MCU ROM <b>回读 5 处 × 2048 字节</b>跟本地比，0.4 秒，能区分相邻两版</li>
+    </ol>
+  </div>
+
+  <div class="callout c-danger">
+    <span class="tag">不可信</span>
+    <div><b>电台自报的「编译于」时间是假的。</b>那个时间戳来自 <code>__DATE__</code>，编在 <code>usb_com.c</code> 里；增量构建时那个文件没被重编，报的是<b>上一次</b>的时间。要确认电台上跑的到底是哪一版，<b>只能用 <code>--verify</code></b>。</div>
+  </div>
+
+  <h2 style="margin-top:20px; font-size:14px"><span class="num" style="border-color:var(--muted); color:var(--muted)">一次性</span>为什么非得换驱动</h2>
+  <div class="panel"><div class="rows">
+    <div class="row" data-k="Zadig WinUSB 驱动 libusb"><div class="k"><span class="key">Zadig → WinUSB</span></div>
+      <div class="d">刷机走 DFU，DFU 要用 libusb 说话，Windows 上 libusb 要求设备绑 WinUSB。原来绑的是 DfuSe 装的 <b>STTub30</b>，libusb 打不开<span class="note">Zadig 里必须核对 USB ID 是 <code>0483 DF11</code>。<b>绝对不要碰 <code>OpenGD77 (COM13)</code> / <code>1FC9 0094</code></b> —— 那是正常模式的串口，换了 CPS 和控制端全挂</span></div></div>
+    <div class="row" data-k="DfuSe 标准 不兼容 加密 0x91"><div class="k"><span class="key">为什么不用 DfuSe</span></div>
+      <div class="d">TYT 的 bootloader <b>不是标准 DfuSe</b>：整个镜像要先用 <code>MDUV380_ENCODE_CIPHER</code> 逐字节异或，擦写前还要发两条私有命令 <code>0x91 0x01</code> / <code>0x91 0x31</code>。标准工具不会发这些</div></div>
+    <div class="row" data-k="代价 CPS Firmware loader 不能刷"><div class="k"><span class="key">代价</span></div>
+      <div class="d">换成 WinUSB 后 <b>DfuSeDemo 看不到电台、CPS 的 Firmware loader 也刷不了</b>（它俩都走 STTub30）<span class="note">恢复：设备管理器 → 更新驱动程序 → 浏览 → 从列表中选取 → <code>STM Device in DFU Mode</code></span></div></div>
+  </div></div>
+
+  <div class="callout c-ok" style="margin-top:10px">
+    <span class="tag">刷坏了</span>
+    <div>刷到一半断了，电台是<b>停在 DFU，不是砖</b> —— bootloader 在 <code>0x08000000</code>，我们只写 <code>0x0800C000</code> 往上，碰不到它。直接重跑 <code>flash.py</code> 就行。真要退回 CPS 刷，先按上面把驱动换回 STTub30。</div>
+  </div>
+
+  <div class="callout c-ok" style="margin-top:9px">
+    <span class="tag">已验证</span>
+    <div>离线合并 codec 的结果，跟从电台 MCU ROM 读回来的 297904 字节<b>逐字节一致</b>（SHA256 相同）—— 也就是说我们复现了 CPS 那句 <code>Patching for DMR</code>。拼接偏移 <code>0x6937C</code>、长度 <code>0x48BB0</code> 是链接脚本里 <code>. = ABSOLUTE(0x807537C)</code> <b>钉死</b>的，不随代码大小浮动。</div>
+  </div>
+</section>
+
+<section id="build">
+  <h2><span class="num">12</span>编译环境</h2>
+  <p class="lede">已经全部就位，不用再装什么。这里记的是「都有什么、放在哪、怎么跑」。</p>
+
+  <div class="panel" style="margin-bottom:10px"><div class="tablewrap">
+    <table class="wrapcells">
+      <thead><tr><th>东西</th><th>版本 / 位置</th><th>备注</th></tr></thead>
+      <tbody>
+        <tr data-k="工具链 toolchain arm-none-eabi gcc"><td class="name">ARM 工具链</td><td class="n">Arm GNU 14.2.Rel1<br>firmware\toolchain\bin</td><td>项目内自带，不用装到系统 PATH</td></tr>
+        <tr data-k="源码 fork AES256"><td class="name">源码</td><td class="n">firmware\OpenGD77-AES256<br>git 2ce799d</td><td>fork 自 <code>dondch/OpenGD77-AES256</code>，基线是上游 R20260131</td></tr>
+        <tr data-k="python 依赖 pyserial pillow libusb"><td class="name">Python</td><td class="n">3.11 + pyserial 3.5<br>+ pillow + libusb-package</td><td><code>libusb-package</code> 是 DFU 后端，没它 <code>flash.py</code> 跑不了</td></tr>
+        <tr data-k="donor MD-9600 codec AMBE"><td class="name">donor 固件</td><td class="n">210525 MD-9600…\MD9600-CSV(2571V5)-V26.45.bin</td><td>AMBE 语音编解码从这里面抠，<b>项目里不含源码</b></td></tr>
+        <tr data-k="codec_cleaner exe Windows MSYS"><td class="name">codec_cleaner</td><td class="n">.exe（不是 .Linux）</td><td>上游硬编码了 ELF 版，Git Bash / MSYS 下跑不了。Makefile 已改成按 <code>$(OS)</code> 挑</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+
+  <p style="font-size:13.5px; color:var(--ink-2); margin:0 0 4px">出一版日常固件的完整命令：</p>
+  <pre class="cmd">export PATH="/d/project/MD-UV390/firmware/toolchain/bin:$PATH"
+cd /d/project/MD-UV390/firmware/OpenGD77-AES256/MDUV380_firmware
+<b>rm -rf build</b>          <i># 换过开关就必须清，见下</i>
+make -j8 ENABLE_AES=1 ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 \
+         ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 \
+         ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 \
+         DISABLE_SAT_ALARM=1 ENABLE_DOPPLER_READOUT=1
+python tools/package_fw.py build/openuv380-10w.bin   <i># 想用 CPS 刷才需要打 zip</i></pre>
+
+  <div class="callout c-warn" style="margin-top:10px">
+    <span class="tag">内存</span>
+    <div>两块 RAM 都快满了，<b>这是所有改动的前提</b>。日常固件编完剩 <b>RAM 1604 字节 / CCM 236 字节</b>。CCM 不是闲着的 —— 校准数据、热点缓冲、声音表早占满了。<br>推论：<b>纯绘图改动</b>（用已有的 40 KB 帧缓冲）不吃 RAM，随便做；<b>新增全局变量或缓冲区</b>必须先腾地方。瀑布图就踩过一次：64 项调色板 LUT 占 128 字节 bss，直接把链接撑爆，改成实时计算才过。</div>
+  </div>
+
+  <div class="callout c-danger" style="margin-top:9px">
+    <span class="tag">两条铁律</span>
+    <div><b>① 换编译开关必须 <code>rm -rf build</code></b> —— <code>make</code> 不跟踪开关变化，只看源文件时间戳。不清就换开关会得到<b>混合构建</b>（部分 .o 还带着上一轮的开关）。我就这么撞上过一次「莫名其妙的 104 字节 RAM 溢出」，其实是残留的 AES 目标文件。<br><b>② 别拿 <code>size</code> 的 text 判断代码变没变</b> —— 四种配置编出来 text 全是 728864，我一度以为回归脚本坏了。真相：AMBE 占位段被链接脚本钉在<b>固定结束地址</b>，<code>.text</code> 长一点它就短一点，两者之和恒定。<b>代码变没变看 md5，装不装得下看 RAM。</b></div>
+  </div>
+
+  <div class="callout c-ok" style="margin-top:9px">
+    <span class="tag">规矩</span>
+    <div>每个功能一个开关、默认关闭，<b>关闭时二进制若跟 stock 有差异必须能解释</b>。例：<code>codeplug.h</code> 的枚举是共享定义，加新类型必然改变 stock 的代码生成，差 4 字节 —— 查明无副作用（自定义数据区是链表式按类型匹配，不是按枚举索引布局，已有数据不会被挪动）。改完<b>四种配置都要能编</b>：stock / WATERFALL / WATERFALL+FAST_SCAN / 全功能。</div>
+  </div>
+</section>
+
+<section id="tools">
+  <h2><span class="num">13</span>工具箱</h2>
+  <p class="lede">全在 <code>tools/</code>。控制端双击根目录的 <code>启动控制端.bat</code>，浏览器开 <code>127.0.0.1:8390</code>。</p>
+  <div class="panel"><div class="tablewrap">
+    <table class="wrapcells">
+      <thead><tr><th>脚本</th><th>干什么</th></tr></thead>
+      <tbody>
+        <tr data-k="flash.py 刷机 回读校验"><td class="n">flash.py</td><td><b>刷机 + 回读校验</b>（<code>--list</code> / <code>--dfu</code> / <code>--yes</code> / <code>--verify</code>）</td></tr>
+        <tr data-k="sat.py 卫星 TLE 星历"><td class="n">sat.py</td><td>卫星星历：<code>list</code> / <code>dump</code> / <code>refresh</code> / <code>addfm</code></td></tr>
+        <tr data-k="ogd77.py CPS 协议 读写"><td class="n">ogd77.py / ogd77_ctl.py / ogd77_write.py</td><td>CPS 协议：读任意区段 / 发命令 / 写信道</td></tr>
+        <tr data-k="控制端 server 浏览器"><td class="n">ogd77_server.py + ui/index.html</td><td>本地控制端 <code>127.0.0.1:8390</code></td></tr>
+        <tr data-k="抓屏 截图 screen 按键注入"><td class="n">ogd77_screen.py</td><td>抓屏（<b>任何固件都能抓</b>）+ 按键注入（需 KEY_INJECTION）</td></tr>
+        <tr data-k="drive.py 自动 按键序列"><td class="n">drive.py</td><td>按一串键并每步截图，UI 改动自查就靠它</td></tr>
+        <tr data-k="wf_preview 瀑布 配色 预览"><td class="n">wf_preview.py</td><td>从当前屏幕反查 level、渲染新旧配色对比，<b>不用刷机</b></td></tr>
+        <tr data-k="bandlog 解码 出图 热力图"><td class="n">bandlog.py / render_bandlog.py</td><td>频段日志解码与出图</td></tr>
+        <tr data-k="package_fw zip CPS 打包"><td class="n">package_fw.py</td><td>把 .bin 打成 CPS 能刷的固件 zip（固定名 + 18 个 .gla 语言文件）</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</section>
+
+<section id="pits">
+  <h2><span class="num">14</span>别再试了</h2>
+  <p class="lede">这些都试过了，结论是死的。再碰一次只是重新花一遍时间。</p>
+  <div class="panel">
+
+    <div class="pit" data-k="原厂固件 备份 读保护">
+      <div class="no">用 DfuSe 备份原厂 TYT 固件</div>
+      <div class="why">MCU 开了<b>读保护</b>，读出来是垃圾；而且刷过 OpenGD77 之后 dump 到的就是 OpenGD77 自己。作者明说所有支持机型都做不到。</div>
+    </div>
+
+    <div class="pit" data-k="0x9F 免按键 DFU 自动 进入">
+      <div class="no">让电台自己进 DFU（免手按组合键）</div>
+      <div class="why">写过 CPS 命令 <code>0x9F</code> 想清掉 app 初始栈指针的有效位。实测 <code>HAL_FLASH_Program</code> 返回 <code>HAL_OK</code>、<code>FLASH_GetError()</code> 是 0，<b>但那个字根本没变</b>，重启照样进正常模式。最可能是 TYT bootloader 给 app 扇区上了写保护。上游的 <code>dmr_reboot_dfu.py</code>（<code>0x90</code>）也不行 —— 它跳的是 <b>STM32 的 ROM bootloader</b>，这台用的是 TYT 自己那个（证据：DFU 报的内存布局从 <code>0x800c000</code> 起）。已改成明确报错，不再干等一个永远不会出现的设备。</div>
+    </div>
+
+    <div class="pit" data-k="抓屏 通知 notification 验证">
+      <div class="no">用抓屏验证任何「通知」类功能</div>
+      <div class="why">彩屏平台上 <code>uiNotificationRefresh()</code> 先画一遍没有通知的画面推给屏，再把通知直接 memcpy 到物理面板 —— <b>通知只存在于屏幕上，从不进帧缓冲</b>。这是结构性的，卫星闹钟就是栽在这上面。</div>
+    </div>
+
+    <div class="pit" data-k="CPS 改时钟 加速测试 闹钟 RTC">
+      <div class="no">用 CPS 改时钟做「加速测试」</div>
+      <div class="why">那条命令<b>顺手调了 <code>menuSatelliteScreenClearPredictions()</code></b>，把闹钟清掉 —— 测试动作本身杀死了被测对象。而且它是<b>真的写 RTC</b>，重启不会恢复：我就这么把电台时钟弄错了 33 分钟。<b>验证手段不该扰动被测对象。</b></div>
+    </div>
+
+    <div class="pit" data-k="size text 判断 代码 变化">
+      <div class="no">拿 <code>size</code> 的 text 判断代码变没变</div>
+      <div class="why">四种配置全是 728864 —— AMBE 占位段钉在固定结束地址，此消彼长。<b>看 md5 和 RAM。</b></div>
+    </div>
+
+    <div class="pit" data-k="make clean build 开关 混合构建">
+      <div class="no">换编译开关不清 <code>build</code></div>
+      <div class="why"><code>make</code> 只看源文件时间戳，不看开关。会得到混合构建 —— 我因此以为撞上了 104 字节的神秘 RAM 溢出，其实是上一轮残留的 AES 目标文件。</div>
+    </div>
+
+    <div class="pit" data-k="编译时间 build date 不可信">
+      <div class="no">相信电台自报的「编译于」时间</div>
+      <div class="why">来自 <code>__DATE__</code>，增量构建时那个文件没重编。用 <code>flash.py --verify</code> 回读 MCU ROM。</div>
+    </div>
+
+    <div class="pit" data-k="KEY_INJECTION AES 共存 RAM 溢出">
+      <div class="no">日常固件里同时开按键注入和 AES / DMR 短信</div>
+      <div class="why"><b>RAM 溢出 104 字节</b>，链接不过。按键注入是 dev 开关，自查 UI 时单开。</div>
+    </div>
+
+    <div class="pit" data-k="调色板 LUT bss 内存">
+      <div class="no">给瀑布图做查表调色板</div>
+      <div class="why">64 项 LUT 占 128 字节 bss，直接把链接撑爆。改成实时计算才过。<b>这台机器上任何新增静态数组都要先算字节数。</b></div>
+    </div>
+
+    <div class="pit" data-k="彩虹 jet 调色板 rainbow">
+      <div class="no">用彩虹（jet）给强度类数据上色</div>
+      <div class="why">彩虹不是感知均匀的，而且<b>最亮的区域在中段</b> —— 底噪被涂成满饱和青绿，真信号反而淹没。量级数据要<b>单色阶、亮度单调递增</b>。</div>
+    </div>
+
+    <div class="pit" data-k="菜单 红键 取消 绿键 保存">
+      <div class="no">在选项菜单里按红键退出</div>
+      <div class="why"><b>红键是取消，绿键才是保存。</b>我第一次改完 <code>Time:Off</code> 按红退出，设置整个回滚了，还以为是固件没生效。主题类的另外要 <b>SK2+绿</b> 才写进 flash。</div>
+    </div>
+
+    <div class="pit" data-k="卫星屏 HS_RUN USB 重枚举 串口断开">
+      <div class="no">在卫星屏上指望串口不断</div>
+      <div class="why">进卫星屏会 <code>clockManagerSetRunMode(kAPP_PowerModeHsrun)</code> 切 CPU 到高速档，<b>USB 会重新枚举、COM 口掉线</b>。工具必须能容忍重连。</div>
+    </div>
+
+    <div class="pit" data-k="Tone Scan 亚音 Rx Tx">
+      <div class="no">Tone Scan 完就直接用</div>
+      <div class="why">它会<b>同时把 Rx 和 Tx 亚音都设上</b>，之后这个信道只有收到匹配亚音才出声。日常用中继的正确配法是 <b>Tx Tone 留着、Rx Tone 设回 None</b>。</div>
+    </div>
+
+    <div class="pit" data-k="编码 GBK UTF-8 grep 后台">
+      <div class="no">后台 <code>grep</code> 等一个 Python 脚本的中文输出</div>
+      <div class="why">Python 在 Windows 上写的是 <b>GBK</b>，grep 的模式是 <b>UTF-8</b>，永远匹配不上 —— 循环空转到天荒地老。<b>脚本之间的握手信号用 ASCII。</b></div>
+    </div>
+
+    <div class="pit" data-k="盲操作 菜单 光标 位置">
+      <div class="no">按固定步数盲翻菜单</div>
+      <div class="why">主菜单和子菜单<b>记住上次光标位置</b>。每步截图确认。另外一帧读回要约 1.4 秒，按键后等 350 ms 再抓，否则拍到重绘前的画面。</div>
+    </div>
+
+  </div>
+</section>
+
+<div class="empty" id="noresult" hidden>没有匹配的条目</div>
+
+<footer>
+  <b>项目里的其他文档</b><br>
+  路线图与改动全记录：<code>ROADMAP.md</code>　·　刷机与驱动细节：<code>docs\flashing.md</code>　·　码表源文件：<code>codeplug\</code><br>
+  本页截图：<code>media\</code>（都是从电台帧缓冲直接读出来的）　·　历史固件：<code>firmware\out\</code>，随时可退<br><br>
+  <b>上游文档</b><br>
+  完整中文手册：<code>docs\OpenGD77_UserGuide-master\OpenGD77_User_Guide_CN.pdf</code><br>
+  UV380/390 专属按键图：<code>docs\OpenGD77_UserGuide-master\media\MD-UV380-CheatSheet-CN.png</code><br>
+  仓库里那张 <code>Quick Guide Graphic_CN.jpg</code> 画的是 GD-77，键位不同，别照着学。
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var q = document.getElementById("q");
+  var rows = Array.prototype.slice.call(document.querySelectorAll("[data-k]"));
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section"));
+  var noresult = document.getElementById("noresult");
+  if (!q) return;
+
+  function norm(s){ return (s || "").toLowerCase(); }
+
+  q.addEventListener("input", function(){
+    var term = norm(q.value.trim());
+    if (!term){
+      rows.forEach(function(r){ r.hidden = false; });
+      sections.forEach(function(s){ s.hidden = false; });
+      noresult.hidden = true;
+      return;
+    }
+    rows.forEach(function(r){
+      var hay = norm(r.getAttribute("data-k") + " " + r.textContent);
+      r.hidden = hay.indexOf(term) === -1;
+    });
+    var anyVisible = false;
+    sections.forEach(function(s){
+      var kids = s.querySelectorAll("[data-k]");
+      if (!kids.length){ s.hidden = true; return; }
+      var shown = Array.prototype.some.call(kids, function(k){ return !k.hidden; });
+      s.hidden = !shown;
+      if (shown) anyVisible = true;
+    });
+    noresult.hidden = anyVisible;
+  });
+})();
+</script>
+
+</body>
+</html>

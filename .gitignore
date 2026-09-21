@@ -1,0 +1,14 @@
+# build output
+firmware/MDUV380_firmware/build/
+*.o
+*.d
+*.map
+*.elf
+*.hex
+__pycache__/
+
+# never commit: TYT donor firmware (their copyright), radio dumps (per-unit
+# calibration), or anything pulled off a radio
+*.bin
+*.dfu
+backup/

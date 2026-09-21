@@ -1,0 +1,13 @@
+* text=auto
+
+# never line-ending-convert these
+*.png     binary
+*.exe     binary
+*.Linux   binary
+*.bin     binary
+*.gla     binary
+
+# shell scripts and the makefile must stay LF even on Windows checkouts
+*.sh      text eol=lf
+Makefile  text eol=lf
+prepare   text eol=lf

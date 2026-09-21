@@ -1,0 +1,53 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: stock
+            flags: ""
+          - name: release-no-aes
+            flags: "ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 DISABLE_SAT_ALARM=1 ENABLE_DOPPLER_READOUT=1"
+          - name: release
+            flags: "ENABLE_AES=1 ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 DISABLE_SAT_ALARM=1 ENABLE_DOPPLER_READOUT=1"
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM GNU toolchain
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: "14.2.Rel1"
+
+      - name: Build
+        working-directory: firmware/MDUV380_firmware
+        run: make -j$(nproc) ${{ matrix.flags }}
+
+      - name: Report size
+        working-directory: firmware/MDUV380_firmware
+        run: arm-none-eabi-size build/openuv380-10w.elf
+
+      # The AMBE codec is NOT in this binary -- it is spliced in at flash time from
+      # the user's own MD-9600 donor. Assert the placeholder region is still there.
+      - name: Assert codec region reserved
+        working-directory: firmware/MDUV380_firmware
+        run: |
+          sz=$(stat -c%s build/openuv380-10w.bin)
+          echo "firmware .bin size: $sz bytes"
+          test "$sz" -ge 728876 || { echo "ERROR: .bin too small to receive the AMBE codec merge"; exit 1; }
+          python3 -c "d=open('build/openuv380-10w.bin','rb').read(); seg=d[0x6937C:0x6937C+0x48BB0]; assert len(seg)==0x48BB0, 'codec window truncated'; assert set(seg)<={0xFF}, 'codec window is not blank -- do not distribute this binary'; print('OK: codec window blank, %d bytes of 0xFF' % len(seg))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openuv380-10w-${{ matrix.name }}
+          path: |
+            firmware/MDUV380_firmware/build/*.bin
+            firmware/MDUV380_firmware/build/*.hex
