@@ -459,6 +459,14 @@ make -j8 ENABLE_AES=1 ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1          ENABLE_FAST_
   用 CPS 改时钟做加速测试时，`usb_com.c` 会顺手调 `menuSatelliteScreenClearPredictions()`
   把闹钟清掉——测试动作本身杀死了被测对象。进卫星屏还会切 CPU 到 HS_RUN，USB 会断开重枚举。
 - **该主动给出止损点。** 做不出来的东西要自己喊停，而不是等用户喊。
+- **「像死机」先怀疑设置，再怀疑代码。** 2026-09-21 实机：屏幕不刷新、绿灯常亮、S 表不动、
+  按一下键活几秒又卡住 —— 真相是上游的省电模式 `ecoLevel`（出厂默认 1）。
+  它**只关射频芯片、不碰屏幕和背光**，而绿灯/S 表都由 RSSI 驱动，
+  射频断电后 `LedWrite(LED_GREEN, 0)` 走不到，灯就停在亮着。
+  `Options → General Options → Eco Level` 改 0 即止。
+  **我在这条上连猜错两次**（先赖 CPS 屏没退出、又赖 USB 抑制），
+  两次都是在没有数据的情况下硬推，还把用户没说过的话当成了前提。
+  正确做法是**第一时间给一个用户能自己一次性证伪的判据**，而不是继续讲机制。
 - 改完四种配置都要能编：stock / WATERFALL / WATERFALL+FAST_SCAN / 全功能。
   **别拿 `size` 的 text 当判据** —— 四种配置编出来 text 全是 728864，我一度以为回归脚本坏了。
   真相：`.codec_bin_section_1`（AMBE 占位）被链接脚本钉在固定结束地址，

@@ -530,6 +530,11 @@
   <h2><span class="num">05</span>排障</h2>
   <p class="lede">这几天实际踩到的坑，按症状查。</p>
   <div class="panel">
+    <div class="fix" data-k="死机 卡死 假死 绿灯常亮 待机 省电 Eco 信号强度条不动">
+      <div class="sym">用着用着<b>像死机</b>：屏幕不刷新、<b>顶部绿灯常亮</b>、信号强度条不动；<b>随便按一个键就活几秒，然后又卡住</b></div>
+      <div class="cause"><b>不是死机，是省电模式（Eco）在关射频。</b> <code>ecoLevel</code> 出厂默认就是 <b>1</b>。它<b>只关 AT1846S / C6000 / 前置放大，完全不碰屏幕和背光</b> —— 所以看不出是在省电。而绿灯和 S 表都由 RSSI 驱动，射频一断电 RSSI 就是死值，<code>LedWrite(LED_GREEN, 0)</code> 那条路永远走不到，<b>灯就停在亮着、表停在最后一个读数</b>。按任意键（<code>ev-&gt;hasEvent</code>）立刻唤醒并重新计时：Level 1 = <b>10 秒</b>、2 = 8 秒、3 = 6 秒、4 = 4 秒 —— 「按一下活几秒又卡住」就是这个循环。</div>
+      <div class="cure"><code>Options → General Options → <b>Eco Level</b></code> 改成 <b>0</b>，<b>按绿键确认保存</b>（红键是取消）。<span class="note">代价是费电。不想全局关就用码表里每个信道的 <code>NO_ECO</code> 标志，只给常驻信道禁省电。<b>这是上游的默认行为，不是本固件引入的。</b></span></div>
+    </div>
     <div class="fix" data-k="ERROR Rx Only 只能收 发不出去">
       <div class="sym">按 PTT 提示 <code>ERROR Rx Only</code></div>
       <div class="cause">该信道的 <b>Rx Only</b> 标志是 Yes。码表里 <b>POEM 4 / SONATE-2 / UmKA-1</b> 三个是故意设的 —— 它们是只有下行、没有上行的信标星。</div>
