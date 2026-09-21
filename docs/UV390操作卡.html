@@ -1064,7 +1064,7 @@ python tools/package_fw.py build/openuv380-10w.bin   <i># 想用 CPS 刷才需�
 
   <figure class="shot">
     <img class="wide" src="../media/control-panel.jpg" alt="控制端界面">
-    <figcaption>真在跑的样子。左边整张码表，右边那块<b>是电台此刻的屏幕</b> —— 读帧缓冲现画出来的，不是截图文件。顶栏是串口号、机型和固件版本。</figcaption>
+    <figcaption>真在跑的样子。左边整张码表，右边那块<b>是电台此刻的屏幕</b> —— 读帧缓冲现画出来的，不是截图文件。顶栏是串口号、机型和固件版本。<br>版面分两层：上面并排的是两块<b>操作台</b>（码表 / 电台屏幕加键盘），其余卡片在下面排成自适应网格，宽屏三列、窄屏自动收成两列或一列。</figcaption>
   </figure>
 
   <div class="panel" style="margin-top:12px"><div class="tablewrap">
@@ -1073,12 +1073,11 @@ python tools/package_fw.py build/openuv380-10w.bin   <i># 想用 CPS 刷才需�
       <tbody>
         <tr data-k="信道 码表 列表"><td class="name">信道</td><td>列出整张码表：编号 / 名称 / 收发频率 / 收发亚音</td><td class="n">—</td></tr>
         <tr data-k="修改信道 写入 亚音"><td class="name">修改信道</td><td>改名称（ASCII ≤16）、收发频率、收发亚音。亚音<b>留空 = 不改，填 <code>none</code> = 清除</b></td><td class="n">—</td></tr>
-        <tr data-k="热力图 频段占用"><td class="name">频段占用热力图</td><td>把导出的频段日志画成热力图</td><td class="n">BAND_LOG</td></tr>
         <tr data-k="远程屏幕 镜像 虚拟键盘"><td class="name">远程屏幕</td><td>电台屏幕实时画进浏览器、可存 PNG；一整块虚拟键盘，带「长按 / 长按不放 / 按住 SK1 / 按住 SK2」四个修饰勾选</td><td class="n">看屏任何固件都行；<b>按键要 KEY_INJECTION</b></td></tr>
         <tr data-k="电台信息 固件版本"><td class="name">电台信息</td><td>机型、固件版本、编译日期、Flash 序列号、特性位（反显 / 扩展呼号库 / 语音提示）</td><td class="n">—</td></tr>
         <tr data-k="VFO 只读"><td class="name">VFO</td><td>当前 VFO 状态，只读</td><td class="n">—</td></tr>
         <tr data-k="电台操作 闪灯 重启 热点"><td class="name">电台操作</td><td>往电台屏幕上推文字（每行 ≤16 个 ASCII）、退出 CPS 屏、闪红/绿灯、保存设置、重启、进入热点模式</td><td class="n">—</td></tr>
-        <tr data-k="频段日志 开始记录 导出"><td class="name">频段日志</td><td>开始记录 / 停止 / 查状态 / 导出并解析</td><td class="n">BAND_LOG</td></tr>
+        <tr data-k="频段日志 开始记录 导出 热力图"><td class="name">频段占用</td><td>开始记录 / 停止 / 查状态 / 导出并解析，<b>解析完的热力图就长在同一张卡里</b></td><td class="n">BAND_LOG</td></tr>
         <tr data-k="AES 密钥 密钥槽"><td class="name">AES 密钥</td><td>生成随机密钥、写 0–15 号密钥槽、设发射密钥槽（0 = 关闭加密发射）</td><td class="n">AES</td></tr>
         <tr data-k="备份 导出 校准区 信道区"><td class="name">备份</td><td>按「区域 + 起始地址 + 长度」读任意区段存盘，另有 <b>校准区</b> / <b>信道区</b> 两个一键按钮</td><td class="n">—</td></tr>
       </tbody>

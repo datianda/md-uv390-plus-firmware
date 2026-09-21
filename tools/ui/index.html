@@ -52,6 +52,35 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .cols{display:grid;grid-template-columns:1fr 330px;gap:18px;margin-top:20px;align-items:start}
 @media(max-width:900px){.cols{grid-template-columns:1fr}}
 
+/* The screen is what you watch while pressing keys, so pin it -- but only when the
+   viewport is tall enough to show the whole card (it is ~840px with the keypad).
+   Sticky on something taller than the viewport would hide its own bottom. */
+@media(min-width:901px) and (min-height:980px){.rail{position:sticky;top:64px}}
+
+/* Everything that is not a working surface goes in one flat, self-balancing grid.
+   Before this the 330px rail carried 8 cards and ran 3157px tall while the 796px
+   column beside it ended at 993px. */
+.deck{display:grid;grid-template-columns:repeat(auto-fit,minmax(318px,1fr));
+      gap:14px;margin-top:14px;align-items:start;grid-auto-flow:dense}
+.deck > .card{margin-top:0}
+/* the heat map is 160 frequency bins wide -- it needs two columns to be readable */
+.deck > .span2{grid-column:span 2}
+.deck > .full{grid-column:1/-1}
+@media(max-width:1000px){.deck > .span2{grid-column:auto}}
+
+/* reference text, collapsed by default -- it is documentation, not a control */
+details.card > summary{margin:0;padding:11px 14px;font-size:13px;font-weight:600;
+  background:var(--surface-2);cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:8px}
+details.card[open] > summary{border-bottom:1px solid var(--line-2)}
+details.card > summary::-webkit-details-marker{display:none}
+details.card > summary::before{content:"\25B8";color:var(--muted);font-size:11px;
+  transition:transform .15s}
+details.card[open] > summary::before{transform:rotate(90deg)}
+details.card > summary:hover{color:var(--accent)}
+details.card > summary .hint{font-weight:400;color:var(--muted);font-size:11.5px;
+  font-family:var(--mono)}
+
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card + .card{margin-top:14px}
 .card h2{margin:0;padding:11px 14px;font-size:13px;font-weight:600;
@@ -163,25 +192,9 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
         </div>
       </div>
 
-      <div class="card" id="bl-card" hidden>
-        <h2>频段占用热力图 <span class="hint" id="bl-meta"></span></h2>
-        <div class="body">
-          <div class="hm-wrap">
-            <canvas id="bl-canvas" width="880" height="360"></canvas>
-            <div id="bl-tip" class="hm-tip" hidden></div>
-          </div>
-          <div class="hm-legend">
-            <span class="hm-legend-label">弱</span>
-            <span id="bl-ramp" class="hm-ramp"></span>
-            <span class="hm-legend-label">强</span>
-            <span class="hm-legend-scale" id="bl-scale"></span>
-          </div>
-          <p class="note" id="bl-note"></p>
-        </div>
       </div>
-    </div>
 
-    <div>
+    <div class="rail">
       <div class="card">
         <h2>远程屏幕 <span class="hint">读帧缓冲任何固件都行 · 按键需 ENABLE_KEY_INJECTION</span></h2>
         <div class="body">
@@ -221,15 +234,11 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
         </div>
       </div>
 
-      <div class="card">
-        <h2>电台信息</h2>
-        <div class="body"><table id="infotable"><tbody></tbody></table></div>
       </div>
 
-      <div class="card">
-        <h2>VFO <span class="hint">只读</span></h2>
-        <div class="body"><table id="vfotable"><tbody></tbody></table></div>
-      </div>
+  </div>
+
+  <div class="deck">
 
       <div class="card">
         <h2>电台操作</h2>
@@ -264,26 +273,6 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
       </div>
 
       <div class="card">
-        <h2>频段日志 <span class="hint">需 ENABLE_BAND_LOG 固件</span></h2>
-        <div class="body">
-          <div class="row">
-            <button class="primary" id="bl-start">开始记录</button>
-            <button id="bl-stop">停止</button>
-            <button id="bl-status">查状态</button>
-          </div>
-          <div style="height:10px"></div>
-          <div class="grid2">
-            <div class="field"><label>导出长度（字节）</label><input id="bl-len" value="0x20000"></div>
-            <div class="field"><label>&nbsp;</label>
-              <button id="bl-export" style="width:100%">导出并解析</button></div>
-          </div>
-          <p class="note">电台在 VFO 下扫描（长按 <code>#</code>）时，每扫完一轮写一条记录。
-             导出走 CPS 协议，每次 32 字节，<b>128KB 约要一分钟</b>，先导一小段看看。</p>
-          <div id="blmsg"></div>
-        </div>
-      </div>
-
-      <div class="card">
         <h2>AES 密钥 <span class="hint">需 ENABLE_AES 固件</span></h2>
         <div class="body">
           <div class="grid2">
@@ -311,6 +300,11 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
       </div>
 
       <div class="card">
+        <h2>电台信息</h2>
+        <div class="body"><table id="infotable"><tbody></tbody></table></div>
+      </div>
+
+      <div class="card">
         <h2>备份</h2>
         <div class="body">
           <div class="grid2">
@@ -331,7 +325,47 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
       </div>
 
       <div class="card">
-        <h2>做不到的事</h2>
+        <h2>VFO <span class="hint">只读</span></h2>
+        <div class="body"><table id="vfotable"><tbody></tbody></table></div>
+      </div>
+
+      <div class="card" id="band-card">
+        <h2>频段占用 <span class="hint">需 ENABLE_BAND_LOG 固件</span></h2>
+        <div class="body">
+          <div class="row">
+            <button class="primary" id="bl-start">开始记录</button>
+            <button id="bl-stop">停止</button>
+            <button id="bl-status">查状态</button>
+          </div>
+          <div style="height:10px"></div>
+          <div class="grid2">
+            <div class="field"><label>导出长度（字节）</label><input id="bl-len" value="0x20000"></div>
+            <div class="field"><label>&nbsp;</label>
+              <button id="bl-export" style="width:100%">导出并解析</button></div>
+          </div>
+          <p class="note">电台在 VFO 下扫描（长按 <code>#</code>）时，每扫完一轮写一条记录。
+             导出走 CPS 协议，每次 32 字节，<b>128KB 约要一分钟</b>，先导一小段看看。</p>
+          <div id="blmsg"></div>
+          <div id="bl-out" hidden>
+            <div style="height:13px"></div>
+            <div class="hint-row" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:7px" id="bl-meta"></div>
+          <div class="hm-wrap">
+            <canvas id="bl-canvas" width="880" height="360"></canvas>
+            <div id="bl-tip" class="hm-tip" hidden></div>
+          </div>
+          <div class="hm-legend">
+            <span class="hm-legend-label">弱</span>
+            <span id="bl-ramp" class="hm-ramp"></span>
+            <span class="hm-legend-label">强</span>
+            <span class="hm-legend-scale" id="bl-scale"></span>
+          </div>
+          <p class="note" id="bl-note"></p>
+          </div>
+        </div>
+      </div>
+
+      <details class="card full">
+        <summary>做不到的事 <span class="hint">串口协议没有这些命令</span></summary>
         <div class="body"><p class="cant">
           OpenGD77 的串口协议里<b>没有</b>这些命令，所以本控制端也给不了：<br>
           · <b>遥控 PTT 发射</b><br>
@@ -340,8 +374,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
           协议的命令通道只有：屏幕接管、保存设置、重启、闪灯、初始化编解码器、设时间、GPS 日志。
           能做收发控制的是<b>热点模式</b>（SK1+开机），那是另一套 MMDVM 协议，只走 DMR。
         </p></div>
-      </div>
-    </div>
+      </details>
 
   </div>
 </div>
@@ -569,8 +602,8 @@ function rampFor(level){          // level 0..1
 
 function drawHeatmap(){
   const c = $("#bl-canvas");
-  if(!BL || !BL.samples.length){ $("#bl-card").hidden = true; return; }
-  $("#bl-card").hidden = false;
+  if(!BL || !BL.samples.length){ $("#bl-out").hidden = true; $("#band-card").classList.remove("full"); return; }
+  $("#bl-out").hidden = false; $("#band-card").classList.add("full");
 
   const rows = BL.samples, bins = rows[0].length;
   const padL = 52, padB = 26, padT = 8, padR = 8;
@@ -682,7 +715,7 @@ $("#bl-export").onclick = async () => {
     if(!d.summary.count){
       msg("#blmsg","warn","读到了 " + d.bytes + " 字节，但没解析出记录。\n" +
           "要么还没开始记录，要么导出长度不够。\n原始数据: " + d.path);
-      $("#bl-card").hidden = true;
+      $("#bl-out").hidden = true; $("#band-card").classList.remove("full");
       return;
     }
     msg("#blmsg","ok", `解析出 ${d.summary.count} 条记录\n` +
