@@ -298,6 +298,23 @@ typedef uint32_t time_t_custom;     /* date/time in unix secs past 1-Jan-70 */
 #define VFO_SWEEP_RSSI_NOISE_FLOOR_DEFAULT    14
 
 #define SCREEN_LINE_BUFFER_SIZE               17 // 16 characters (for a 8 pixels font width) + NULL
+
+/*
+ * strncat()'s third argument is how many more bytes may be APPENDED -- not the size of
+ * the destination -- and it writes a NUL on top of that. So strncat(d, s, sizeof d) can
+ * write strlen(d) + sizeof(d) + 1 bytes into d. Every menu in this tree passed
+ * SCREEN_LINE_BUFFER_SIZE, i.e. the whole buffer: 14 call sites, all appending a units
+ * string to a line that already holds the value.
+ *
+ * It never showed because the appended string is one or two characters and the
+ * destination was usually short. That is luck, not safety -- and the Chinese menus make
+ * it worse, because GB2312 is two bytes per character so the left side reaches 16 bytes
+ * routinely. GCC had been warning about it all along ("specified bound 17 equals
+ * destination size"); the warning was drowned in the noise from the upstream files.
+ *
+ * Only valid where dst is an array in scope, which all 14 sites are.
+ */
+#define SCREEN_STRNCAT(dst, src) 	strncat((dst), (src), ((sizeof(dst) - strlen(dst)) - 1))
 #define LOCATION_TEXT_BUFFER_SIZE             32
 
 #define OUT_OF_BAND_FALLBACK_FREQUENCY       43000000

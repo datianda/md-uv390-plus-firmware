@@ -46,6 +46,32 @@ void LEDsInit(void);
 void torchToggle(void);
 #endif
 
+#if defined(ENABLE_DIAG)
+// A ring of squelch/LED transitions, in CCM, readable over CPS 0x9A. The point is to
+// catch the fault while the radio is NOT on USB -- with the cable attached, Eco never
+// engages, so the cable is blind to the state the fault needs.
+#define SQUELCH_TRACE_ENTRIES 20
+
+typedef struct __attribute__((packed))
+{
+	uint32_t ms;       // ticksGetMillis() when this transition happened
+	uint8_t  noise;    // 0x1B low byte: what the squelch actually decided on
+	uint8_t  rssi;     // 0x1B high byte
+	uint8_t  flags;    // b0 ledOn, b1 shouldBe, b2 rxOn, b3 analogSig, b4 digitalSig, b5 tx
+	uint8_t  modeSlot; // low nibble currentMode, high nibble slotState
+} squelchTraceEvent_t;
+
+void squelchTraceInit(void);   // .ccmram is NOT zeroed by startup; call once at boot
+uint8_t squelchTraceCount(void);
+uint8_t squelchTraceWrapped(void);
+const squelchTraceEvent_t *squelchTraceAt(uint8_t i);
+#endif
+
+// The green LED's owner. See Leds.c for why it needed one.
+void ledsTick(void);
+bool ledsGreenShouldBeOn(void);
+uint32_t ledsGreenCorrectionCount(void);
+
 void LedWrite(LEDs_t theLED, uint8_t output);
 uint8_t LedRead(LEDs_t theLED);
 void LedWriteDirect(LEDs_t theLED, uint8_t output);

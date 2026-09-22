@@ -52,6 +52,9 @@
 #include "interfaces/settingsStorage.h"
 #include "interfaces/adc.h"
 #include "functions/rxPowerSaving.h"
+#if defined(ENABLE_CJK)
+#include "functions/cjkFont.h"
+#endif
 #include "functions/dmr_sms.h"
 /* Unconditional: the header compiles to nothing without ENABLE_SPECTRUM apart from the
  * no-op SCANPROF_* macros, which the main loop uses whether or not the flag is set. */
@@ -444,6 +447,12 @@ void applicationMainTask(void)
 	HRC6000Init();
 
 	dmrAesInit(); // AES state lives in .ccmram which the startup does not init; zero it (no-op unless ENABLE_AES)
+#if defined(ENABLE_CJK)
+	cjkFontInit(); // 读外部 flash 0x800000 的字库头；没烧就安静退回英文
+#endif
+#if defined(ENABLE_DIAG)
+	squelchTraceInit(); // same reason: .ccmram holds the trace ring and is not zeroed
+#endif
 
 	radioPostinit();
 
@@ -602,7 +611,7 @@ void applicationMainTask(void)
 			}
 		}
 
-#if defined(ENABLE_KEY_INJECTION)
+#if defined(ENABLE_DIAG)
 		// DEV: replay a USB-injected key (CPS 0x96) as if physically pressed, but only
 		// when no real key is active, so the remote keypad never fights the real one.
 		if ((key_event == EVENT_KEY_NONE) && (keys.key == 0))
@@ -1307,7 +1316,7 @@ void applicationMainTask(void)
 			}
 #endif
 		}
-#if defined(ENABLE_KEY_INJECTION)
+#if defined(ENABLE_DIAG)
 		// DEV: a USB-injected FUNCTION event (CPS 0x97), delivered the same way a
 		// quick-key delivers one. Only when nothing else is happening this iteration, so
 		// it can never mask a real key or button.
@@ -1483,6 +1492,8 @@ void applicationMainTask(void)
 #endif
 
 			rxPowerSavingTick(&ev, hasSignal);
+			// After rxPowerSavingTick(), so the owner sees this tick's Eco state.
+			ledsTick();
 		}
 
 		int8_t latestVolume = getVolumeControl();

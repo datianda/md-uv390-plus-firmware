@@ -34,6 +34,9 @@
 #include "hardware/HX8353E_charset_JA.h"
 #else
 #include <hardware/HX8353E_charset.h>
+#if defined(ENABLE_CJK)
+#include "functions/cjkFont.h"
+#endif
 #endif
 #include "functions/settings.h"
 #include "functions/spectrum.h"   /* SCANPROF_*: dev-only scan-step profiler, no-ops otherwise */
@@ -171,6 +174,36 @@ static uint8_t *getUncompressedChar(uint8_t *dest, uint8_t *currentFont, uint8_t
 }
 #endif
 
+#if defined(ENABLE_CJK)
+/*
+ * 量一串文字的像素宽。对齐和截断都用它，**和渲染循环共用同一个判据** --
+ * BA7IQE 的实现里这两处判据不一致（渲染有 < 0xf8 守卫、量宽没有），
+ * 结果居中过的中文串会偏。抽成一个函数就不可能漂移。
+ */
+static int16_t cjkTextWidth(const char *szMsg, int16_t sLen, int16_t asciiWidth,
+		int16_t cjkAdvance, bool cjkOn)
+{
+	int16_t w = 0;
+
+	for (int16_t i = 0; i < sLen; i++)
+	{
+		// (i + 1) < sLen：不读结束符。他那份在最后一个字节上仍读 szMsg[i+1]。
+		if (cjkOn && ((i + 1) < sLen) &&
+				cjkIsLeadByte((uint8_t)szMsg[i], (uint8_t)szMsg[i + 1]))
+		{
+			w += cjkAdvance;
+			i++;
+		}
+		else
+		{
+			w += asciiWidth;
+		}
+	}
+
+	return w;
+}
+#endif
+
 int displayPrintCore(int16_t xPos, int16_t yPos, const char *szMsg, ucFont_t fontSize, ucTextAlign_t alignment, bool isInverted)
 {
 	return displayPrintCoreDoubleHeight(xPos, yPos, szMsg, fontSize, alignment, isInverted, false);
@@ -189,6 +222,14 @@ int displayPrintCoreDoubleHeight(int16_t xPos, int16_t yPos, const char *szMsg, 
 	uint8_t *currentFont;
 	bool fontIsCompressed = false;
 	uint8_t uncompressChar[64];
+#if defined(ENABLE_CJK)
+	// 字形解进上面这个已有的栈缓冲：12x12 = 24 字节、13x13 = 26 字节，都塞得下，
+	// 所以中文**零新增主 RAM** —— 主 RAM 只剩 64 字节，这点是硬约束。
+	const bool cjkOn = cjkFontIsReady();
+	const int16_t cjkW = (cjkOn ? cjkFontWidth() : 0);
+	const int16_t cjkH = (cjkOn ? cjkFontHeight() : 0);
+	const int16_t cjkAdvance = cjkW + 1;
+#endif
 
 	sLen = strlen(szMsg);
 
@@ -239,9 +280,42 @@ int displayPrintCoreDoubleHeight(int16_t xPos, int16_t yPos, const char *szMsg, 
 	charHeightPixels  	= currentFont[5];  // page count per char
 	bytesPerChar 		= currentFont[7];  // bytes per char
 
-	if ((charWidthPixels * sLen) + xPos > DISPLAY_SIZE_X)
+#if defined(ENABLE_CJK)
+	int16_t textWidth = cjkTextWidth(szMsg, sLen, charWidthPixels, cjkAdvance, cjkOn);
+#else
+	int16_t textWidth = charWidthPixels * sLen;
+#endif
+
+	if ((textWidth + xPos) > DISPLAY_SIZE_X)
 	{
-		sLen = (DISPLAY_SIZE_X - xPos) / charWidthPixels;
+		// 逐字走着截。原来是 (字宽 x sLen)，而 sLen 是**字节数** --
+		// 一个汉字占 2 字节却只占 1 个字位，那样算会把中文串砍掉将近一半。
+		// BA7IQE 没改这条，所以他的中文串会被过早截断。
+		int16_t fit = 0;
+		int16_t used = 0;
+
+		while (fit < sLen)
+		{
+#if defined(ENABLE_CJK)
+			const bool wide = (cjkOn && ((fit + 1) < sLen) &&
+					cjkIsLeadByte((uint8_t)szMsg[fit], (uint8_t)szMsg[fit + 1]));
+			const int16_t adv = (wide ? cjkAdvance : charWidthPixels);
+#else
+			const bool wide = false;
+			const int16_t adv = charWidthPixels;
+#endif
+
+			if ((used + adv + xPos) > DISPLAY_SIZE_X)
+			{
+				break;
+			}
+
+			used += adv;
+			fit += (wide ? 2 : 1);
+		}
+
+		sLen = fit;
+		textWidth = used;
 	}
 
 	if (sLen < 0)
@@ -255,49 +329,78 @@ int displayPrintCoreDoubleHeight(int16_t xPos, int16_t yPos, const char *szMsg, 
 			// left aligned, do nothing.
 			break;
 		case TEXT_ALIGN_CENTER:
-			xPos = (DISPLAY_SIZE_X - (charWidthPixels * sLen)) >> 1;
+			xPos = (DISPLAY_SIZE_X - textWidth) >> 1;
 			break;
 		case TEXT_ALIGN_RIGHT:
-			xPos = DISPLAY_SIZE_X - (charWidthPixels * sLen);
+			xPos = DISPLAY_SIZE_X - textWidth;
 			break;
 	}
 
+	// x 推进改成游标累加。原来是 i * charWidthPixels，定宽假设，双宽字一来就散。
+	uint32_t charPixelOffset = 0;
+
 	for (int16_t i = 0; i < sLen; i++)
 	{
+		int16_t glyphW = charWidthPixels;
+		int16_t glyphH = charHeightPixels;
+		int16_t glyphY = yPos;
+#if defined(ENABLE_CJK)
+		bool isCJK = false;
+#else
+		const bool isCJK = false;
+#endif
+
 		// Skip space character as it's empty (and no more part of the fonts).
 		if (szMsg[i] == ' ')
 		{
+			charPixelOffset += charWidthPixels;
 			continue;
 		}
 
-		uint32_t charOffset = (szMsg[i] - startCode);
-
-		// End boundary checking.
-		if (charOffset > endCode)
+#if defined(ENABLE_CJK)
+		if (cjkOn && ((i + 1) < sLen) &&
+				cjkIsLeadByte((uint8_t)szMsg[i], (uint8_t)szMsg[i + 1]) &&
+				cjkFontGetGlyph((uint8_t)szMsg[i], (uint8_t)szMsg[i + 1], &uncompressChar[0]))
 		{
-			charOffset = ('?' - startCode); // Substitute unsupported ASCII code by a question mark
+			currentCharData = &uncompressChar[0];
+			glyphW = cjkW;
+			glyphH = cjkH;
+			// 垂直居中到当前 ASCII 行高，不是写死的偏移量。
+			glyphY = yPos + ((charHeightPixels - cjkH) / 2);
+			isCJK = true;
+			i++;   // 吃掉第二个字节
 		}
 
-		if (fontIsCompressed)
+		if (isCJK == false)
+#endif
 		{
-			currentCharData = getUncompressedChar(&uncompressChar[0], currentFont, charOffset);
-		}
-		else
-		{
-			currentCharData = (uint8_t *)&currentFont[8 + (charOffset * bytesPerChar)];
+			uint32_t charOffset = (szMsg[i] - startCode);
+
+			// End boundary checking.
+			if (charOffset > endCode)
+			{
+				charOffset = ('?' - startCode); // Substitute unsupported ASCII code by a question mark
+			}
+
+			if (fontIsCompressed)
+			{
+				currentCharData = getUncompressedChar(&uncompressChar[0], currentFont, charOffset);
+			}
+			else
+			{
+				currentCharData = (uint8_t *)&currentFont[8 + (charOffset * bytesPerChar)];
+			}
 		}
 
-		uint32_t charPixelOffset = (i * charWidthPixels);
-
-		for (int16_t x = 0; x < charWidthPixels; x++)
+		for (int16_t x = 0; x < glyphW; x++)
 		{
 			uint32_t yDblHeightOffset = 0;
 			uint32_t xp = x + xPos;
 
-			for (int16_t y = 0; y < charHeightPixels; y++)
+			for (int16_t y = 0; y < glyphH; y++)
 			{
-				uint8_t rowData = currentCharData[x + ((y / 8) * charWidthPixels)];
-				uint32_t bOffset = xp + yDblHeightOffset + ((yPos + y) * DISPLAY_SIZE_X) + charPixelOffset;
+				uint8_t rowData = currentCharData[x + ((y / 8) * glyphW)];
+				uint32_t bOffset = xp + yDblHeightOffset + ((glyphY + y) * DISPLAY_SIZE_X) + charPixelOffset;
 				uint16_t colour = (isInverted ? backgroundColour : foregroundColour);
 
 				if ((rowData >> (y % 8) & 0x01) && (bOffset < (DISPLAY_SIZE_X * DISPLAY_SIZE_Y)))
@@ -321,6 +424,9 @@ int displayPrintCoreDoubleHeight(int16_t xPos, int16_t yPos, const char *szMsg, 
 				}
 			}
 		}
+
+		// 汉字之间留 1 px，和 BA7IQE 一样；ASCII 保持原来的定宽推进。
+		charPixelOffset += glyphW + (isCJK ? 1 : 0);
 	}
 #endif // ! PLATFORM_GD77S
 	return 0;

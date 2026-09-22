@@ -30,6 +30,9 @@
 #include "functions/hotspot.h"
 #include "functions/bandLog.h"
 #include "functions/settings.h"
+#if defined(ENABLE_CJK)
+#include "functions/cjkFont.h"
+#endif
 #include "user_interface/uiUtilities.h"
 #include "user_interface/menuSystem.h"
 #include "usb/usb_com.h"
@@ -47,7 +50,7 @@
 #include "main.h"
 #include <interfaces/clockManager.h>
 #include "interfaces/settingsStorage.h"
-#if defined(ENABLE_KEY_INJECTION)
+#if defined(ENABLE_DIAG)
 #include "usb_device.h"   /* MX_USB_DEVICE_DeInit() for the DFU jump */
 #endif
 #if defined(ENABLE_SPECTRUM)
@@ -112,9 +115,8 @@ bool isCompressingAMBE = false;
 volatile static bool hasToReply = false;
 volatile static uint32_t replyLength = 0;
 
-volatile bool usbIsResetting = false;
 
-#if defined(ENABLE_KEY_INJECTION)
+#if defined(ENABLE_DIAG)
 /* ---- DEV: USB remote keypad --------------------------------------------------
  * A small ring of keys pushed by CPS command 0x96 and replayed into the NORMAL UI
  * by usbKeyInjectTick() (called from the main loop). Each key is delivered as a
@@ -888,6 +890,16 @@ static void cpsHandleWriteCommand(void)
 						}
 					}
 				}
+#if defined(ENABLE_CJK)
+				// 刚写完的扇区要是落在字库区里，就地重读一次字库头。否则换字号必须
+				// 重启才生效 —— cjkFontInit() 只在开机跑一次，它把字宽/字高缓存在 RAM，
+				// flash 换了而 RAM 里还是旧几何，画出来就会错位或裁切。
+				if (((uint32_t)(sector * 4096) >= CJK_FONT_FLASH_BASE) &&
+						((uint32_t)(sector * 4096) < (CJK_FONT_FLASH_BASE + (1024 * 1024))))
+				{
+					cjkFontInit();
+				}
+#endif
 				sector = -1;
 			}
 			else if (sector == -2)
@@ -1307,7 +1319,7 @@ static void cpsHandleCommand(void)
 			hasToReply = true;
 			replyLength = 4;
 			return;   /* NOT break -- see above */
-#if defined(ENABLE_SCAN_PROFILER)
+#if defined(ENABLE_DIAG)
 		case 0xA9: // DEV: read the scan-step profiler table. [2] = action:
 			//        bit0 = zero the table after reading, bit1 = zero it and return nothing
 			//        useful (arm before a run). Reply:
@@ -1359,7 +1371,7 @@ static void cpsHandleCommand(void)
 				replyLength = n;
 			}
 			return;   /* NOT break -- see above */
-#endif /* ENABLE_SCAN_PROFILER */
+#endif /* ENABLE_DIAG */
 		case 0xA5: // DEV: read one AT1846S register: [2]=reg -> [cmd, 0xA5, reg, hi, lo, ok].
 			//        Reads the chip, not the driver's value cache.
 			{
@@ -1534,6 +1546,82 @@ static void cpsHandleCommand(void)
 			}
 			return;   /* NOT break -- see above */
 #endif
+#if defined(ENABLE_DIAG)
+		case 0x9A: // DIAG: dump the squelch/LED transition ring. [2] = 1 to clear after.
+			//       Replies [cmd, count, wrapped, 0, then count x 8-byte events].
+			//       This exists because the cable cannot see the fault: with USB attached
+			//       Eco never engages, so the receiver never powers down and the state the
+			//       fault needs never occurs while anything is watching.
+			{
+				uint8_t n = squelchTraceCount();
+				uint8_t *p = (uint8_t *)&usbComSendBuf[4];
+
+				usbComSendBuf[0] = com_requestbuffer[0];
+				usbComSendBuf[1] = n;
+				usbComSendBuf[2] = squelchTraceWrapped();
+				usbComSendBuf[3] = 0;
+
+				for (uint8_t i = 0; i < n; i++)
+				{
+					const squelchTraceEvent_t *e = squelchTraceAt(i);
+					memcpy(p, e, sizeof(squelchTraceEvent_t));
+					p += sizeof(squelchTraceEvent_t);
+				}
+
+				if (com_requestbuffer[2] == 1)
+				{
+					squelchTraceInit();
+				}
+
+				hasToReply = true;
+				replyLength = (uint16_t)(4 + (n * sizeof(squelchTraceEvent_t)));
+			}
+			return;   /* NOT break -- the generic '-' reply would clobber this */
+#endif
+#if defined(ENABLE_DIAG)
+		case 0x99: // DIAG: green LED vs. what it should be, plus every input the owner
+			//       derives it from. Read-only, so it can be polled while the fault is
+			//       happening. The LED is a GPIO: screen capture structurally cannot see
+			//       it, and inferring it from the outside already cost two wrong guesses.
+			//       Replies [cmd, isOn, shouldBeOn, txFlags, rxOn, mode, slotState,
+			//                sigFlags, menu, ecoLevel, corrections(4 LE)].
+			{
+				uint32_t corr = ledsGreenCorrectionCount();
+
+				usbComSendBuf[0] = com_requestbuffer[0];
+				usbComSendBuf[1] = (uint8_t)(LedRead(LED_GREEN) ? 1 : 0);
+				usbComSendBuf[2] = (uint8_t)(ledsGreenShouldBeOn() ? 1 : 0);
+				usbComSendBuf[3] = (uint8_t)((trxIsTransmitting ? 1 : 0) |
+						(trxTransmissionEnabled ? 2 : 0));
+				usbComSendBuf[4] = (uint8_t)(rxPowerSavingIsRxOn() ? 1 : 0);
+				usbComSendBuf[5] = (uint8_t)currentRadioDevice->currentMode;
+				usbComSendBuf[6] = (uint8_t)slotState;
+				usbComSendBuf[7] = (uint8_t)((currentRadioDevice->analogSignalReceived ? 1 : 0) |
+						(currentRadioDevice->digitalSignalReceived ? 2 : 0));
+				usbComSendBuf[8] = (uint8_t)menuSystemGetCurrentMenuNumber();
+				usbComSendBuf[9] = (uint8_t)nonVolatileSettings.ecoLevel;
+				for (int i = 0; i < 4; i++)
+				{
+					usbComSendBuf[10 + i] = (uint8_t)((corr >> (i * 8)) & 0xFF);
+				}
+				// The squelch decision's raw inputs, AND the threshold the firmware itself
+				// computed from them. Reporting only the inputs was not enough: the host
+				// tools ended up copying TRX_SQUELCH_MAX/INC/HIST anyway and applying the
+				// formula themselves, which is the drift this was meant to avoid. Now the
+				// radio answers with the number it actually decided on.
+				usbComSendBuf[14] = currentRadioDevice->trxRxNoise;
+				usbComSendBuf[15] = currentRadioDevice->trxRxSignal;
+				usbComSendBuf[16] = currentChannelData->sql;
+				usbComSendBuf[17] = nonVolatileSettings.squelchDefaults[
+						currentRadioDevice->trxCurrentBand[TRX_RX_FREQ_BAND]];
+				usbComSendBuf[18] = (uint8_t)currentRadioDevice->trxCurrentBand[TRX_RX_FREQ_BAND];
+				hasToReply = true;
+				usbComSendBuf[19] = trxGetAnalogSquelchThreshold();
+				usbComSendBuf[20] = TRX_SQUELCH_HIST;
+				replyLength = 21;
+			}
+			return;   /* NOT break -- the generic '-' reply would clobber this */
+#endif
 #if defined(ENABLE_SAT_ALERT)
 		case 0x98: // DEV: read back the satellite alarm state. Read-only, so it can be
 			//        polled without disturbing what it measures - which is the whole
@@ -1559,7 +1647,7 @@ static void cpsHandleCommand(void)
 			}
 			return;   /* NOT break -- the generic '-' reply would clobber this */
 #endif
-#ifdef ENABLE_KEY_INJECTION
+#ifdef ENABLE_DIAG
 		case 0x96: // DEV: inject a keypad key: [2]=keycode, [3]=flags (bit0 = long press).
 			//        bit0 = long, bit1 = hold (long press with no release), bit2 = SK1
 			//        held, bit3 = SK2 held. Queued here; usbKeyInjectTick() feeds it to
@@ -2344,12 +2432,19 @@ void USB_DEBUG_printf(const char *format, ...)
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-bool USB_DeviceIsResetting(void)
+/*
+ * 原来叫 USB_DeviceIsResetting()，返回 usbIsResetting —— 而那个标志全树只有一处
+ * 赋值（= false），**从来没有被置过 true**。所以它作为判据恒假，是死的；
+ * 但它顺手干的这件事是活的：USB 一旦枚举完成就把时钟拉到全速。
+ *
+ * 一个名字问句、返回值没人真用、真正作用藏在副作用里的函数，放在 Eco 热路径的
+ * `||` 链第一个 —— 从调用点完全看不出它其实在改时钟。查绿灯常亮时我把它当成
+ * 嫌疑对象排查过，白费了时间。现在名字说它干什么，返回 void，调用点独立成行。
+ */
+void usbEnsureFullClockIfConnected(void)
 {
 	if ((hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) && (clockManagerGetRunMode() != CLOCK_MANAGER_SPEED_RUN))
 	{
 		clockManagerSetRunMode(kAPP_PowerModeRun, CLOCK_MANAGER_SPEED_RUN);
 	}
-
-	return usbIsResetting;
 }

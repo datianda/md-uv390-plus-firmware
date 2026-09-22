@@ -41,11 +41,19 @@ ifeq ($(DMR_AES_DIAG_RX),1)
 DEFS += -DDMR_AES_DIAG_RX
 endif
 
-# Dev-only: USB display mirror + remote key injection (fbmirror.py / rkey.py).
-# Lets a PC drive the UI and read the framebuffer over USB. Never enable in a
-# release build. Independent of ENABLE_AES.
-ifeq ($(ENABLE_KEY_INJECTION),1)
-DEFS += -DENABLE_KEY_INJECTION
+# ENABLE_DIAG: one instrumented build, not four flags.
+#
+# Covers remote key injection + framebuffer read (drive.py / ogd77_screen.py),
+# the green-LED diagnostic (CPS 0x99), the squelch/LED transition ring in CCM
+# (CPS 0x9A) and the sweep profiler counters. These used to be four separate
+# flags -- KEY_INJECTION / LED_DIAG / SQUELCH_TRACE / SCAN_PROFILER -- but they
+# are always wanted together ("build me one with instruments so I can chase
+# this"), and never one without the others. Four flags bought nothing except a
+# combinatorial space nobody ever compiled.
+#
+# Dev-only: never enable in a release build. Independent of ENABLE_AES.
+ifeq ($(ENABLE_DIAG),1)
+DEFS += -DENABLE_DIAG
 endif
 
 # Dev-only: swept-RSSI receiver driven over USB (tools/sweep.py). NOT an SDR --
@@ -59,9 +67,7 @@ endif
 # for the slot table, which is a lot on a target with under 2 KB spare, so it is separate
 # from ENABLE_SPECTRUM -- the sweep tooling is worth keeping when the profiler is not.
 # Requires ENABLE_SPECTRUM: the implementation lives in spectrum.c.
-ifeq ($(ENABLE_SCAN_PROFILER),1)
-DEFS += -DENABLE_SCAN_PROFILER
-endif
+
 
 # Faster ANALOG scanning: adds sub-30 ms steps (20/15/10/6 ms) to the existing
 # "Scan dwell time" setting, selectable on the radio and via CHIRP. Digital scanning is
@@ -98,13 +104,20 @@ ifeq ($(ENABLE_DOPPLER_READOUT),1)
 DEFS += -DENABLE_DOPPLER_READOUT
 endif
 
-# DISABLE_SAT_ALARM: removes the satellite pass ALARM entirely - arming it with
-# SK2+Green, the beeping, the wake-from-sleep, and ENABLE_SAT_ALERT's additions. The
-# satellite screen itself is untouched: predictions, the polar tracking screen and the
-# Doppler-corrected frequencies all stay. Off by default, so a build without it behaves
-# exactly as upstream does.
-ifeq ($(DISABLE_SAT_ALARM),1)
-DEFS += -DDISABLE_SAT_ALARM
+# ENABLE_SAT_ALARM: the satellite pass ALARM - arming it with SK2+Green, the beeping,
+# the wake-from-sleep, and ENABLE_SAT_ALERT's additions on top. The satellite screen
+# itself does not depend on it: predictions, the polar tracking screen and the
+# Doppler-corrected frequencies are there either way.
+#
+# NOTE ON POLARITY. This used to be DISABLE_SAT_ALARM, which we passed on every daily
+# build -- so we compiled *with* a flag whose meaning was "switch this off". A double
+# negative that had to be translated in your head every time you read it. Inverted.
+#
+# The consequence: upstream HAS this alarm, so a build that wants to be identical to
+# stock must now pass ENABLE_SAT_ALARM=1. Leaving every flag off no longer means
+# "upstream behaviour" for this one feature. The CI stock job passes it for that reason.
+ifeq ($(ENABLE_SAT_ALARM),1)
+DEFS += -DENABLE_SAT_ALARM
 endif
 
 # ENABLE_SAT_ALERT: makes the satellite pass alarm announce itself from any screen.
@@ -113,8 +126,16 @@ endif
 # only while that screen is on display. Arm an alarm and then go back to using the
 # radio and the pass arrives in silence. Also stops arming from switching the radio
 # off, which is only useful when there is no other way to be told.
+#
+# Implies ENABLE_SAT_ALARM: an alert is an improvement *to* the alarm, and its code
+# uses the alarm's own state (ALARM_OFFSET_SECS, alarmTime). Without it the build
+# simply does not compile. The dependency is encoded here rather than written in a
+# comment -- that is exactly the mistake that ENABLE_SCAN_PROFILER made ("Requires
+# ENABLE_SPECTRUM" was only ever a comment, and the combination that breaks was
+# therefore never built).
 ifeq ($(ENABLE_SAT_ALERT),1)
 DEFS += -DENABLE_SAT_ALERT
+DEFS += -DENABLE_SAT_ALARM
 endif
 
 # ENABLE_INFO_DENSITY: fills the channel screen's biggest hole with the facts it
@@ -144,6 +165,25 @@ ifeq ($(ENABLE_BAND_LOG),1)
 DEFS += -DENABLE_BAND_LOG
 endif
 
+# ENABLE_CJK: Chinese display. The glyph table is NOT in the firmware -- it lives
+# in external SPI flash at 0x800000, generated from the user's own font by
+# tools/cjkfont.py and written separately (same posture as the AMBE codec: no
+# third-party binary ever enters this repo). The firmware reads a 32-byte header
+# at boot, checks the magic, and falls back to English in silence if no table is
+# present. Geometry comes from that header, so changing the glyph size needs a
+# font rewrite, not a rebuild. Costs 8 bytes of .bss: the glyph is decoded into
+# the stack buffer displayPrintCore() already had.
+ifeq ($(ENABLE_CJK),1)
+DEFS += -DENABLE_CJK
+endif
+
+# LANGUAGE_BUILD_CHINESE: puts Simplified Chinese (GB2312) in the secondary
+# language slot. Needs ENABLE_CJK too, or the renderer will not recognise the
+# double-byte sequences and the menus turn into question marks.
+ifeq ($(LANGUAGE_BUILD_CHINESE),1)
+DEFS += -DLANGUAGE_BUILD_CHINESE
+endif
+
 CFLAGS  = $(CPU) $(DEFS) $(INCS) -Os -g3 -ffunction-sections -fdata-sections -Wall -MMD -MP
 LDSCRIPT = STM32F405VGTX_FLASH.ld
 LDFLAGS = $(CPU) -T$(LDSCRIPT) --specs=nano.specs -Wl,--gc-sections -Wl,-Map=$(BUILD)/$(TARGET).map -lc -lm -lnosys
@@ -152,6 +192,22 @@ C_SRCS   = $(shell find Core Drivers Middlewares USB_DEVICE application -name *.
 ASM_SRCS = Core/Startup/startup_stm32f405vgtx.s
 ASM_SRCS_S = $(shell find application -name *.S)
 OBJS = $(addprefix $(BUILD)/,$(C_SRCS:.c=.o)) $(addprefix $(BUILD)/,$(ASM_SRCS:.s=.o)) $(addprefix $(BUILD)/,$(ASM_SRCS_S:.S=.o))
+
+# 所有目标目录**一次建好**，作为 order-only 前置依赖。
+#
+# 原来每条编译规则里各有一句 `@mkdir -p $(dir $@)`，也就是每个 .o 都要跑一次 mkdir，
+# 全量构建近 900 次。合并成一次是省事，不是修 bug ——
+# **我一度以为它修掉了一个 -j8 竞态，那个结论是错的**：那几次"随机失败"的真因是
+# 我的测试循环里 `rm -rf build` 之后立刻重建，Windows 上刚删掉的大目录句柄未必
+# 立即释放，新的 make 就撞进了半删状态的树。换成每个组合用各自的 BUILD 目录
+# （make BUILD=build-xxx）之后不再复现。CI 每次都是干净检出，本来就碰不到。
+OBJDIRS := $(sort $(dir $(OBJS)))
+
+$(BUILD)/.dirs:
+	@mkdir -p $(OBJDIRS)
+	@touch $@
+
+$(OBJS): | $(BUILD)/.dirs
 DEPS = $(OBJS:.o=.d)
 
 .DEFAULT_GOAL := all
@@ -173,15 +229,12 @@ $(BUILD)/application/source/dmr_codec/codec_bin.o: $(LINKERDATA_BIN)
 all: $(BUILD)/$(TARGET).bin $(BUILD)/$(TARGET).hex
 
 $(BUILD)/%.o: %.c
-	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD)/%.o: %.s
-	@mkdir -p $(dir $@)
 	$(CC) $(CPU) -c $< -o $@
 
 $(BUILD)/%.o: %.S
-	@mkdir -p $(dir $@)
 	$(CC) $(CPU) -I. -Iapplication -c $< -o $@
 
 $(BUILD)/$(TARGET).elf: $(OBJS)

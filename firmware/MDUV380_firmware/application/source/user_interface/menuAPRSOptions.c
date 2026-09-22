@@ -417,7 +417,7 @@ static void updateScreen(bool isFirstRun)
 
 					if (rightSideUnitsStr != NULL)
 					{
-						strncat(rightSideVar, rightSideUnitsStr, SCREEN_LINE_BUFFER_SIZE);
+						SCREEN_STRNCAT(rightSideVar, rightSideUnitsStr);
 					}
 				}
 
@@ -440,7 +440,7 @@ static void updateScreen(bool isFirstRun)
 			{
 				if (rightSideUnitsStr != NULL)
 				{
-					strncat(buf, rightSideUnitsStr, SCREEN_LINE_BUFFER_SIZE);
+					SCREEN_STRNCAT(buf, rightSideUnitsStr);
 				}
 
 				menuDisplayEntry(i, mNum, buf, (strlen(leftSide) + 1), THEME_ITEM_FG_MENU_ITEM, THEME_ITEM_FG_OPTIONS_VALUE, THEME_ITEM_BG);

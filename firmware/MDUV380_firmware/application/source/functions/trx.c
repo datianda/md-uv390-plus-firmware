@@ -98,9 +98,6 @@ const frequencyHardwareBand_t RADIO_HARDWARE_FREQUENCY_BANDS[RADIO_BANDS_TOTAL_N
 };
 #endif
 
-#define TRX_SQUELCH_MAX    70
-#define TRX_SQUELCH_HIST  3
-#define TRX_SQUELCH_INC   3
 const uint8_t TRX_NUM_CTCSS = 50U;
 
 const uint16_t TRX_CTCSSTones[] = {
@@ -450,7 +447,7 @@ bool trxCarrierDetected(RadioDevice_t deviceId)
 	return (radioDevice->trxRxNoise < squelch);
 }
 
-#if defined(ENABLE_SPECTRUM)
+/* 原来包在 #if defined(ENABLE_SPECTRUM) 里（它最早是给 CPS 0xAC 的扫描工具用的）。 0x99 诊断也要报这个门限，而 0x99 在 ENABLE_DIAG 下，于是「开诊断不开频谱」编不过。 */
 /* DEV: the number the scanner actually compares against (CPS 0xAC).
  *
  * Every detection experiment on this radio turns on `trxRxNoise < squelch`, and the
@@ -471,7 +468,6 @@ uint8_t trxGetAnalogSquelchThreshold(void)
 	return TRX_SQUELCH_MAX - ((nonVolatileSettings.squelchDefaults[
 			currentRadioDevice->trxCurrentBand[TRX_RX_FREQ_BAND]] - 1) * TRX_SQUELCH_INC);
 }
-#endif
 
 bool trxCheckDigitalSquelch(RadioDevice_t deviceId)
 {
@@ -542,6 +538,16 @@ bool trxCheckAnalogSquelch(void)
 	if (uiVFOModeSweepScanning(false) || (currentRadioDevice->currentMode == RADIO_MODE_NONE))
 	{
 		return false;
+	}
+
+	// Eco has the receiver powered down. trxReadRSSIAndNoise() has refused to sample
+	// since it went off, so trxRxNoise is up to a whole off-window old; deciding the
+	// squelch on it would let the open branch below light the green LED and unmute the
+	// audio amp for a receiver that is physically switched off. Report what was last
+	// known instead, which leaves rxPowerSavingTick()'s hasSignal logic unchanged.
+	if (rxPowerSavingIsRxOn() == false)
+	{
+		return currentRadioDevice->analogSignalReceived;
 	}
 
 	trxReadRSSIAndNoise(0);

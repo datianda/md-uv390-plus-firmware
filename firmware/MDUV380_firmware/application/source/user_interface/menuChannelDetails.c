@@ -816,7 +816,7 @@ static void updateScreen(bool isFirstRun, bool allowedToSpeakUpdate)
 
 						if (rightSideUnitsStr != NULL)
 						{
-							strncat(rightSideVar, rightSideUnitsStr, SCREEN_LINE_BUFFER_SIZE);
+							SCREEN_STRNCAT(rightSideVar, rightSideUnitsStr);
 						}
 					}
 
@@ -839,7 +839,7 @@ static void updateScreen(bool isFirstRun, bool allowedToSpeakUpdate)
 				{
 					if (rightSideUnitsStr != NULL)
 					{
-						strncat(buf, rightSideUnitsStr, SCREEN_LINE_BUFFER_SIZE);
+						SCREEN_STRNCAT(buf, rightSideUnitsStr);
 					}
 
 					switch(mNum)

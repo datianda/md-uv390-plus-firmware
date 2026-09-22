@@ -5,15 +5,12 @@
     python flash.py ../firmware/out/X.bin --verify   # what is actually on the radio?
     python flash.py ../firmware/out/X.bin --yes
 
-Put the radio in DFU mode first, by hand. There is a CPS command (0x9F) meant to
-do that from here - it clears the valid bit in the application's initial-SP word
-so TYT's bootloader refuses to leave DFU - and this script still tries it, but on
-this radio it does not work: HAL_FLASH_Program returns HAL_OK with a zero error
-code and the word is unchanged afterwards, and a reboot lands in the application
-as usual. Nothing else in OpenGD77 ever programs internal flash, so that path was
-never exercised upstream; the likely reason is that the bootloader write-protects
-the application sectors and lifts WRP only in DFU mode. The script says so
-instead of waiting for a device that will never appear.
+进 DFU 不用再动手了（2026-09-22 起）。本脚本用 CPS 0x9C：擦掉 app 的首扇区，
+电台复位后只能进 DFU，实测 1 秒内就枚举出来。要固件带 ENABLE_DIAG。
+
+早先这里走的是 0x9F（改写初始 SP 字的有效位），那条**不行** —— 这颗 STM32
+拒绝重编程一个已编程的字，HAL 却返回 HAL_OK、错误码 0，字纹丝不动。
+0x9C 用擦除绕开了这个限制。详见 reboot_to_dfu() 的注释，三条路都记在那儿。
 
 What it does once the radio is in DFU: hands the image to the upstream loader,
 which does the AMBE codec merge and the encrypted download exactly as the CPS
@@ -73,7 +70,27 @@ def wait_for(vid, pid, timeout, what):
 
 
 def reboot_to_dfu():
-    """CPS 0x9F. Returns True once the DFU device shows up."""
+    """CPS 0x9C：擦掉 app 的首扇区，电台复位后只能进 DFU。成功返回 True。
+
+    固件里有三条自动进 DFU 的路，这里用的是唯一实测能成的那条：
+
+      0x9F  改写 app 的初始 SP 字，清掉有效位。**不行** —— 这颗 STM32 拒绝重编程
+            一个已编程的字，而 HAL_FLASH_Program 照样返回 HAL_OK、错误码为 0，
+            字却纹丝不动。这个脚本以前就卡在这条路上。
+      0x9D  在 GPIOE 上伪造 PTT + 顶键跳进 bootloader。不留任何持久状态，
+            但实测**没有回应、USB 也没重新枚举**，电台直接从总线上掉了
+            （断电即恢复，没有损坏）。
+      0x9C  **擦除**整个首扇区（0x0800C000 起 16 KB，即 app 的向量表）再复位。
+            实测 1 秒内 DFU 就出现了。0x9F 失败的原因是"不能改写已编程的字"，
+            而擦除绕开了这个限制 —— 这正是它该成功的道理。
+
+    0x9C 是**持久**的：擦掉之后电台只会进 DFU，直到有人把那个扇区写回去。
+    所以它只该紧挨着刷机用 —— 也就是这里。刷机本来就会重写这个扇区。
+    不会变砖：扇区 0-2 是 bootloader，从不被碰，永远能起到 DFU。
+
+    ACK 经常收不到（复位只延后 500 ms，回应容易赶不及），所以**不以回应为准**，
+    只看 DFU 设备有没有出现。
+    """
     sys.path.insert(0, HERE)
     from ogd77 import Radio
 
@@ -81,35 +98,24 @@ def reboot_to_dfu():
         print(" *  电台已经在 DFU 模式")
         return True
 
-    import struct
-
-    with Radio() as r:
-        r.ser.reset_input_buffer()
-        r.ser.write(b"C" + bytes([0x9F, 0, 0]))
-        r.ser.flush()
-        time.sleep(0.3)
-        reply = r.ser.read(14)
-
-    if len(reply) < 14:
-        print("!! 0x9F 没有正常回应（%s）。固件是不是没开 ENABLE_KEY_INJECTION？"
-              % reply.hex())
+    try:
+        with Radio() as r:
+            r.ser.reset_input_buffer()
+            r.ser.write(b"C" + bytes([0x9C, 0, 0]))
+            r.ser.flush()
+            time.sleep(0.2)
+            r.ser.read(2)          # ACK 可有可无，见上
+    except Exception as e:
+        print("!! 送 0x9C 失败：%s" % e)
+        print("   —— 请手动进 DFU：关机，按住 SK1 + PTT 再开机。")
         return False
 
-    err, sr, sp = struct.unpack("<III", reply[2:14])
-    if (sp & 0x20000000) != 0:
-        # Do NOT claim success here. HAL_FLASH_Program returns HAL_OK and leaves
-        # FLASH_GetError() at 0 while changing nothing at all, so the only honest
-        # test is the word itself - and on this radio it comes back untouched.
-        # Nothing else in OpenGD77 ever programs internal flash, so this path was
-        # never exercised upstream; the likely reason is that TYT's bootloader
-        # write-protects the application sectors and only lifts WRP in DFU mode.
-        print("!! 0x9F 没能生效：SP 字仍是 0x%08X（有效），电台不会进 DFU。" % sp)
-        print("   HAL=%d  FLASH error=0x%08X  FLASH->SR=0x%08X" % (reply[1], err, sr))
-        print("   —— 请手动进 DFU：关机，按住进 DFU 的组合键再开机。")
-        return False
+    if wait_for(DFU_VID, DFU_PID, 25, "DFU 设备"):
+        return True
 
-    print(" *  0x9F 生效，SP 字已置为 0x%08X，正在重启进 DFU…" % sp)
-    return wait_for(DFU_VID, DFU_PID, 20, "DFU 设备")
+    print("!! 0x9C 之后 DFU 没出现。固件是不是没开 ENABLE_DIAG？")
+    print("   —— 请手动进 DFU：关机，按住 SK1 + PTT 再开机。")
+    return False
 
 
 CODEC_OFF, CODEC_LEN, DONOR_OFF = 0x6937C, 0x48BB0, 0xC2C7C

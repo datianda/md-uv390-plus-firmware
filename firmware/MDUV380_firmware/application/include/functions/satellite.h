@@ -31,7 +31,20 @@
 #include "user_interface/uiGlobals.h"
 
 #define NUM_SATELLITES 25
-#define NUM_SATELLITE_PREDICTIONS 15
+/*
+ * 每颗卫星常驻内存的过境槽位数。**这是本机最大的一笔 RAM 开销。**
+ *
+ * satelliteDataNative 是 25 颗 x sizeof(satelliteData_t)，而其中 67% 是这张预测表：
+ * 上游的 15 个槽 -> 每颗 320 字节 -> 25 颗共 8000 字节，占掉主 RAM 的 6%，
+ * 而主 RAM 本来只剩 1 KB 出头。25 x 15 = 375 个过境槽常驻，UI 一次连零头都显示不完。
+ *
+ * 降到 5（可用 4 次过境）省下约 5000 字节。典型 LEO 一天过境 4-6 次，
+ * 4 次基本覆盖当天，够用。
+ *
+ * 槽位分配：passes[0..N-2] 是真过境，passes[N-1] 是"还有更多、这里截断了"的哨兵
+ * （UI 靠 PREDICTION_RESULT_LIMIT 认它）。所以**可用过境数 = N - 1**。
+ */
+#define NUM_SATELLITE_PREDICTIONS 5
 #define ADDITION_DATA_SIZE 24
 
 #define deg2rad(deg) M_PI / 180.0 * deg

@@ -14,7 +14,7 @@
  *
  * Everything here is behind ENABLE_SPECTRUM, a DEV-ONLY build flag that must never be
  * set for a release build. It is deliberately independent of ENABLE_AES, ENABLE_DMR_DATA
- * and ENABLE_KEY_INJECTION; stock builds stay byte-identical.
+ * and ENABLE_DIAG; stock builds stay byte-identical.
  *
  * Driven from the host over USB CPS 'C' subcommands 0xA0 (sweep) and 0xA1 (settle
  * probe); see usb_com.c and tools/sweep.py.
@@ -372,7 +372,7 @@ void spectrumTick(void);
  * SCANPROF_START/SCANPROF_END bracket a region, SCANPROF_PERIOD records the interval
  * since the previous call on the same slot (for periods rather than durations).
  *
- * Everything is a no-op without ENABLE_SCAN_PROFILER, so the instrumented call sites can
+ * Everything is a no-op without ENABLE_DIAG, so the instrumented call sites can
  * live in stock files (uiVFOMode.c, applicationMain.c, HX8353E_display.c) without a #if
  * around each one and without changing the stock build by a single byte.
  *
@@ -381,7 +381,7 @@ void spectrumTick(void);
  * between having room for a feature and not. It has already answered the question it was
  * built for, so the sweep tooling is usually worth keeping when the profiler is not.
  * Requires ENABLE_SPECTRUM: the implementation lives in spectrum.c. */
-#if defined(ENABLE_SCAN_PROFILER)
+#if defined(ENABLE_DIAG)
 #define SCANPROF_STEP_PERIOD   0   /* wall time between consecutive scan steps       */
 #define SCANPROF_STEP_TOTAL    1   /* the whole "dwell expired" branch of scanning() */
 #define SCANPROF_HANDLEUP      2   /* handleUpKey() as called by the scan step       */
@@ -424,11 +424,18 @@ void scanProfAdd(uint8_t slot, uint32_t startCycles);
 void scanProfMarkPeriod(uint8_t slot);
 void scanProfReset(void);
 uint32_t scanProfCyclesPerUs(void);
-#endif /* ENABLE_SCAN_PROFILER */
+#endif /* ENABLE_DIAG */
 
 #endif /* ENABLE_SPECTRUM */
 
-#if defined(ENABLE_SCAN_PROFILER)
+/* Needs ENABLE_SPECTRUM as well as ENABLE_DIAG: the counters and their storage live
+ * in spectrum.c, which is only compiled with ENABLE_SPECTRUM. This used to be implicit
+ * -- the old ENABLE_SCAN_PROFILER flag merely *documented* "requires ENABLE_SPECTRUM"
+ * and nothing enforced it, so nobody ever built the combination that breaks. Merging
+ * the diagnostics into one ENABLE_DIAG made that combination reachable and the very
+ * first regression build found it. Without SPECTRUM these become no-ops, so the
+ * instrumented call sites still compile. */
+#if defined(ENABLE_DIAG) && defined(ENABLE_SPECTRUM)
 #define SCANPROF_START(v)     uint32_t v = scanProfNow()
 #define SCANPROF_END(s, v)    scanProfAdd((s), (v))
 #define SCANPROF_PERIOD(s)    scanProfMarkPeriod(s)

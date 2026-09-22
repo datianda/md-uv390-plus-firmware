@@ -58,9 +58,21 @@
 | `ENABLE_BAND_LOG` | 频段占用日志器 | ✅ | 实机 14 条 |
 | `ENABLE_AES` | AES-256 加密语音（上游 fork）| ✅ | **只确认菜单能开，收发未实测** |
 | `ENABLE_DMR_DATA` | DMR 短信 | ✅ | **只确认菜单能开，收发未实测** |
-| `DISABLE_SAT_ALARM` | **删掉**上游的卫星过境闹钟 | ✅ | 见「已知限制」|
-| `ENABLE_KEY_INJECTION` | 远程屏幕 + 按键注入 | ✖ | dev 用；与 AES 同开会 RAM 溢出 104 字节 |
-| `ENABLE_SPECTRUM` | USB 驱动的扫频接收 | ✖ | dev 用，未转正 |
+| `ENABLE_CJK` | **简体中文显示**（GB2312）| ✅ | 实机验收，见下 |
+| `LANGUAGE_BUILD_CHINESE` | 中文语言包（283 条翻 194 条）| ✅ | 实机验收 |
+| `ENABLE_SAT_ALARM` | 上游的卫星过境闹钟 | ✅ | 见「已知限制」|
+| `ENABLE_SAT_ALERT` | 让过境提醒**在任何界面**都响 | ✅ | 上游的只在卫星屏上响 |
+| `ENABLE_DIAG` | 远程屏幕 + 按键注入 + 各类诊断 | ✅ | 现在装得下了，见下 |
+| `ENABLE_SPECTRUM` | USB 驱动的扫频接收 | ✅ | dev 用，随包带上 |
+
+`ENABLE_SAT_ALARM` 的极性要注意：它原本叫 `DISABLE_SAT_ALARM`，我们天天带着它编译、
+意思却是"关掉这个功能"，双重否定。已反转。**后果是"什么开关都不开"不再等于上游** ——
+上游是**有**这个闹钟的，要编字节级对齐上游的版本必须显式传 `ENABLE_SAT_ALARM=1`。
+
+`ENABLE_DIAG` 由四个旧开关合并而来（`KEY_INJECTION` / `LED_DIAG` / `SQUELCH_TRACE` /
+`SCAN_PROFILER`）—— 它们的使用场景完全一样（"编一版带仪器的去查问题"），
+从来不会只要其中一个。而以前它**装不下**：和 AES 同开 RAM 溢出 104 字节，
+所以得维持两套固件、跑日常固件时按不了键。现在全都开还剩 3432 字节，两套合一。
 
 ### 配色预设
 
@@ -140,6 +152,39 @@ gamma 三档在 UI Style 里选，**没有哪一档普遍更好** ——
 偏移开始时最大、最近点过零、之后反向，光看修正后的频率看不出趋势。
 两路符号相反、量值按频率比不同，这也是这一屏上唯一能确认上行也在被修正的地方。
 
+### 简体中文
+
+菜单、区域名、频道详情等 283 条字符串里翻了 194 条。缩写（RSSI / TG / PC / DMR /
+APRS / VOX / GPS / TOT…）**故意不翻** —— 火腿本来就说英文，翻成中文反而难认。
+
+**汉字点阵不在固件里。** 它住在外部 16 MB SPI flash 的 `0x800000`，由
+`tools/cjkfont.py` 从**你自己机器上的字体**生成后单独烧进去 —— 跟 AMBE codec 一个路子：
+这个仓库里没有任何别人的二进制。
+
+```bash
+python tools/cjkfont.py build --font C:/Windows/Fonts/simsun.ttc --width 14 --height 14 --px 14
+python tools/cjkfont.py show  backup/cjkfont.bin 主菜单频道     # 打成 ASCII 点阵肉眼校验
+python tools/cjkfont.py flash backup/cjkfont.bin --yes          # 经 CPS 写入，不用进 DFU
+python tools/cjkfont.py verify backup/cjkfont.bin               # 回读逐字节比对
+```
+
+固件开机读一个 32 字节的头并校 magic：**没烧字库就安静地退回英文，不会画乱码**。
+字号也从头里读，所以**换字号只要重烧字库、不用重编固件**。
+主 RAM 代价只有 8 字节 —— 字形直接解进 `displayPrintCore()` 栈上已有的缓冲。
+
+两个坑（都是实机上看出来的，细节在 `docs/FLASH-MAP.md`）：
+
+- **别用"灰度渲染再切二值"。** 抗锯齿会把一条 1px 的横笔摊到相邻两行、每行约 50% 灰，
+  两行都够不到门限，于是整条笔画凭空消失 ——「用」少一横、「言」糊成一团。
+  工具用 FreeType 的单色渲染（`getmask(mode="1")`），笔画对齐到像素网格，一条不丢。
+- **字形的墨迹不是从第 0 行开始的。** 按 bbox 原样落位会把最后一行挤出格子：
+  「电」变「申」、「卫」变「卩」、「主」丢顶点。工具会先量整本字库的墨迹范围再自动居中，
+  并**逐字检查有没有笔画掉到格子外**，全过了才出文件。
+
+字体选择：`simsun.ttc` 14px 最好（宋体自带 12/14/16px 的嵌入式点阵，单色模式下
+FreeType 直接用那套手工调过的字形）。**微软的字体只能自己用，不能随包分发** ——
+要做可分发版本用文泉驿点阵宋体的 BDF，工具直接吃。
+
 ### 频段占用日志器
 
 把每一轮扫描（160 个 RSSI 采样 + 时间 + GPS 定位）记进 16 MB flash 的**最后 2 MB**，
@@ -160,12 +205,19 @@ gamma 三档在 UI Style 里选，**没有哪一档普遍更好** ——
 
 | 文件 | 给谁 | SHA-256 |
 |---|---|---|
-| `md-uv390-plus-firmware-20260921.zip` | CPS 的 Firmware loader | `258a885ca9619175a090ca11792efcb91b33765247606cd9a523671457a750ca` |
-| `md-uv390-plus-firmware-20260921.bin` | 本仓库的 `tools/flash.py` | `7f62e6ce1eab174c2c5a069019df3aa6f8544a545a7ab607fe575bfcd9f8907d` |
+| `md-uv390-plus-firmware-20260922.zip` | CPS 的 Firmware loader | `c11ba5bdbb107b59c097f331be2170215e1aa2090c2662ef4a27bf4046d6154b` |
+| `md-uv390-plus-firmware-20260922.bin` | 本仓库的 `tools/flash.py` | `23d46d778d435facd84454693861384b8619a6be2b82415dc4d1bb43821f6c19` |
+
+这一版是**全都开**的（含中文、诊断、频谱、AES、DMR 短信、卫星闹钟与跨屏提醒），
+主 RAM 仍剩 3432 字节。以前因为装不下而分成的两套固件已经合并。
+
+上一版 `20260921`（无中文、无诊断）：
+zip `258a885ca9619175a090ca11792efcb91b33765247606cd9a523671457a750ca`、
+bin `7f62e6ce1eab174c2c5a069019df3aa6f8544a545a7ab607fe575bfcd9f8907d`。
 
 ```bash
-sha256sum md-uv390-plus-firmware-20260921.zip
-# Windows PowerShell: Get-FileHash .\md-uv390-plus-firmware-20260921.zip -Algorithm SHA256
+sha256sum md-uv390-plus-firmware-20260922.zip
+# Windows PowerShell: Get-FileHash .\md-uv390-plus-firmware-20260922.zip -Algorithm SHA256
 ```
 
 ---
@@ -193,6 +245,14 @@ UI Style、星历全都不丢。这边核对过：刷了十几版之后整块读
 ---
 
 ## 怎么刷
+
+**不用再手动进 DFU 了。** `tools/flash.py` 会用 CPS `0x9C` 把电台送进 DFU
+（擦掉 app 的首扇区再复位，1 秒就枚举出来），刷完那个扇区本来就会被写回去。
+要固件带 `ENABLE_DIAG`。不会变砖：扇区 0-2 是 bootloader，从不被碰，永远能起到 DFU。
+
+固件里另外两条自动进 DFU 的路都**不行**，别浪费时间：`0x9F` 改写 app 初始 SP 字的
+有效位 —— 这颗 STM32 拒绝重编程一个已编程的字，而 HAL 照样返回 `HAL_OK`、错误码 0；
+`0x9D` 伪造按键跳 bootloader —— 实测没回应、USB 也不重新枚举。
 
 ### 路线 A：CPS（官方路子，推荐第一次用）
 
@@ -233,7 +293,9 @@ rm -rf build                      # 换开关必须清，make 不跟踪开关变
 make -j8 ENABLE_AES=1 ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 \
          ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 \
          ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 \
-         DISABLE_SAT_ALARM=1 ENABLE_DOPPLER_READOUT=1
+         ENABLE_DOPPLER_READOUT=1 ENABLE_SAT_ALERT=1 \
+         ENABLE_CJK=1 LANGUAGE_BUILD_CHINESE=1 \
+         ENABLE_DIAG=1 ENABLE_SPECTRUM=1
 python ../../tools/package_fw.py build/openuv380-10w.bin   # 要用 CPS 刷才需要打 zip
 ```
 
@@ -251,8 +313,17 @@ python ../../tools/package_fw.py build/openuv380-10w.bin   # 要用 CPS 刷才�
 
 ### 内存
 
-两块 RAM 都快满了，**这是所有改动的前提**。发布这一版编完剩
-**RAM 1604 字节 / CCM 236 字节**。纯绘图改动（用已有的 40 KB 帧缓冲）不吃 RAM；
+RAM 一直是这台机器唯一真正的瓶颈。**全都开**这一版编完剩
+**主 RAM 3432 字节 / CCM 68 字节**（上一版只剩 1604 / 236，而且带不了诊断开关）。
+
+多出来的 5000 字节是从卫星预测表抠出来的：上游给每颗卫星留 15 个过境槽，
+25 颗就是 375 个槽常驻内存，而界面一次连零头都显示不完。降到 5 槽（可用 4 次过境）
+省下 5000 字节，顺带修掉上游填充循环的一个差一错（写的是 `< N-1`，
+所以最后一格从头到尾没人碰，15 个槽只装了 13 个过境）。
+
+CI 会在 8 种开关组合上都打印剩余量：链接器只在溢出时报错、**不会告诉你还剩多少**，
+而那才是决定下个功能做不做得成的数字。
+纯绘图改动（用已有的 40 KB 帧缓冲）不吃 RAM；
 新增全局变量或缓冲区必须先腾地方 —— 瀑布图的 64 项调色板 LUT 占 128 字节 bss，
 就直接把链接撑爆过，改成实时计算才过。
 

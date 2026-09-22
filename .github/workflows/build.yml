@@ -1,4 +1,17 @@
-name: build
+name: Build MD-UV390 10W firmware
+
+# 为什么是一个组合矩阵而不是一次构建
+# ----------------------------------
+# 这棵树有 15 个功能开关。名义上 2^15 种组合，而在 2026-09-22 之前 CI 只编一个
+# ENABLE_AES 矩阵 —— 也就是说绝大多数组合从没被编译过，bug 就藏在那儿。
+# 那天收敛开关时，头两次回归编译各抓出一个**从没被编译过的组合**：
+#
+#   1. ENABLE_DIAG 不带 ENABLE_SPECTRUM  -> 扫描性能计数器的实现住在 spectrum.c，
+#      旧开关的注释写着"依赖 ENABLE_SPECTRUM"，但那**只是注释**，没有任何东西强制它。
+#   2. ENABLE_SAT_ALERT 不带 ENABLE_SAT_ALARM -> 提醒用的是闹钟自己的状态，编不过。
+#
+# 两个都是手动跑回归时发现的，不是 CI。下面每一行都记着它守的是什么，
+# 删任何一行之前请先想清楚那个 bug 会不会回来。
 
 on:
   push:
@@ -6,10 +19,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  # The repo is synced by hand from the working tree, so nothing systematic stops a
-  # blob being copied across. This job is that missing check: it refuses the push if
-  # a codec blob, radio flash dump, CJK font blob, font file, reference source tree
-  # or token is tracked. It runs once, not per matrix entry.
+  # 发行仓库是手工从工作目录同步过来的，没有任何机制拦住一个不该拷的文件。
+  # 这个 job 就是那道闸门：仓库里一旦出现 codec blob、整片 flash 备份、
+  # 中文点阵字库、字体文件、第三方参考源码或令牌，就拒绝这次推送。
+  # 只跑一次，不跟 build 矩阵绑。
   publish-check:
     runs-on: ubuntu-latest
     steps:
@@ -23,12 +36,42 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # 与上游行为一致的构建。注意必须显式带 ENABLE_SAT_ALARM=1：
+          # 那个开关原本叫 DISABLE_SAT_ALARM（我们天天带着它编译，意思却是"关掉"），
+          # 反转之后"什么都不开"不再等于上游 —— 上游是**有**这个闹钟的。
           - name: stock
+            flags: "ENABLE_SAT_ALARM=1"
+
+          # 最小构建：一个开关都不开。守的是"每个开关都真的可关"。
+          - name: bare
             flags: ""
-          - name: release-no-aes
-            flags: "ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 DISABLE_SAT_ALARM=1 ENABLE_DOPPLER_READOUT=1"
-          - name: release
-            flags: "ENABLE_AES=1 ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 DISABLE_SAT_ALARM=1 ENABLE_DOPPLER_READOUT=1"
+
+          # 日常功能集，无 AES、无中文、无诊断。
+          - name: daily
+            flags: "ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 ENABLE_DOPPLER_READOUT=1"
+
+          # 中文单独一行：渲染层改的是 displayPrintCore()，所有文字都走它，
+          # 它挂了整机没有一个字能显示。
+          - name: chinese
+            flags: "ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 ENABLE_DOPPLER_READOUT=1 ENABLE_CJK=1 LANGUAGE_BUILD_CHINESE=1"
+
+          # >>> 守 bug #1：诊断开着、频谱关着。这一行就是那次编译失败的组合。<<<
+          - name: diag-without-spectrum
+            flags: "ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 ENABLE_DOPPLER_READOUT=1 ENABLE_CJK=1 LANGUAGE_BUILD_CHINESE=1 ENABLE_DIAG=1"
+
+          # 反过来：频谱带诊断。SCANPROF_* 这次要真的展开成调用而不是空操作。
+          - name: diag-with-spectrum
+            flags: "ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 ENABLE_DOPPLER_READOUT=1 ENABLE_DIAG=1 ENABLE_SPECTRUM=1"
+
+          # >>> 守 bug #2：卫星提醒。Makefile 让它自动带上 ENABLE_SAT_ALARM，
+          #     这一行验证那条隐含依赖确实生效（不写 ALARM 也要能编过）。<<<
+          - name: sat-alert-implies-alarm
+            flags: "ENABLE_SAT_ALERT=1"
+
+          # 全都开。这是我们实际发布的那一版，也是 RAM 最紧的一版。
+          - name: everything
+            flags: "ENABLE_AES=1 ENABLE_DMR_DATA=1 ENABLE_WATERFALL=1 ENABLE_FAST_SCAN=1 ENABLE_UI_STYLE=1 ENABLE_BAND_LOG=1 ENABLE_THEME_PRESET=1 ENABLE_INFO_DENSITY=1 ENABLE_DOPPLER_READOUT=1 ENABLE_SAT_ALERT=1 ENABLE_CJK=1 LANGUAGE_BUILD_CHINESE=1 ENABLE_DIAG=1 ENABLE_SPECTRUM=1"
+
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
@@ -42,19 +85,37 @@ jobs:
         working-directory: firmware/MDUV380_firmware
         run: make -j$(nproc) ${{ matrix.flags }}
 
-      - name: Report size
-        working-directory: firmware/MDUV380_firmware
-        run: arm-none-eabi-size build/openuv380-10w.elf
-
-      # The AMBE codec is NOT in this binary -- it is spliced in at flash time from
-      # the user's own MD-9600 donor. Assert the placeholder region is still there.
-      - name: Assert codec region reserved
+      # RAM 是这台机器唯一真正的瓶颈。链接器会在溢出时报错，但**不会告诉你还剩多少** ——
+      # 而"还剩多少"才是决定下一个功能做不做得成的数字。所以把它打出来。
+      #
+      # 注意 arm-none-eabi-size 的 text 列没有参考价值：codec 段是固定地址的，
+      # 代码长一点它的填充就短一点，两者之和恒定。看 RAM，别看 text。
+      - name: Report RAM headroom
         working-directory: firmware/MDUV380_firmware
         run: |
-          sz=$(stat -c%s build/openuv380-10w.bin)
-          echo "firmware .bin size: $sz bytes"
-          test "$sz" -ge 728876 || { echo "ERROR: .bin too small to receive the AMBE codec merge"; exit 1; }
-          python3 -c "d=open('build/openuv380-10w.bin','rb').read(); seg=d[0x6937C:0x6937C+0x48BB0]; assert len(seg)==0x48BB0, 'codec window truncated'; assert set(seg)<={0xFF}, 'codec window is not blank -- do not distribute this binary'; print('OK: codec window blank, %d bytes of 0xFF' % len(seg))"
+          arm-none-eabi-size build/openuv380-10w.elf
+          arm-none-eabi-objdump -h build/openuv380-10w.elf \
+            | awk '$2 ~ /^\.(data|bss|ccmram|_user_heap_stack)$/ {printf "%s %d\n",$2,strtonum("0x"$3)}' > /tmp/sec
+          python3 - <<'EOF'
+          v = dict(l.split() for l in open('/tmp/sec'))
+          ram = int(v['.data']) + int(v['.bss']) + int(v['._user_heap_stack'])
+          ccm = int(v.get('.ccmram', 0))
+          print("main RAM 128K: used %d, FREE %d bytes" % (ram, 128 * 1024 - ram))
+          print("CCM      64K: used %d, FREE %d bytes" % (ccm, 64 * 1024 - ccm))
+          EOF
+
+      # AMBE codec 不在这个仓库里 —— 它在刷机时从用户自己的 MD-9600 捐赠固件切进来。
+      # 光查大小不够：要断言那段窗口**确实是空的**，否则等于分发了 TYT 的代码。
+      - name: Assert codec window reserved and blank
+        working-directory: firmware/MDUV380_firmware
+        run: |
+          python3 -c "
+          d = open('build/openuv380-10w.bin','rb').read()
+          seg = d[0x6937C:0x6937C+0x48BB0]
+          assert len(seg) == 0x48BB0, 'codec window truncated: .bin is only %d bytes' % len(d)
+          assert set(seg) <= {0xFF}, 'codec window is NOT blank -- do not distribute this binary'
+          print('OK: codec window present and blank, %d bytes of 0xFF' % len(seg))
+          "
 
       - uses: actions/upload-artifact@v4
         with:

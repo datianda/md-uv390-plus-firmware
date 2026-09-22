@@ -54,7 +54,7 @@
 #endif
 
 
-#if ! defined(DISABLE_SAT_ALARM)
+#if defined(ENABLE_SAT_ALARM)
 static const uint32_t ALARM_OFFSET_SECS = 60;
 #endif
 
@@ -97,7 +97,7 @@ static satelliteResults_t currentSatelliteResults;
 static int currentlyPredictingSatellite = 0;
 static int numTotalSatellitesPredicted = 0;
 static satelliteData_t *predictingSat;
-#if ! defined(DISABLE_SAT_ALARM)
+#if defined(ENABLE_SAT_ALARM)
 static uint32_t nextAlarmBeepTime = 0;
 #endif
 static bool hasRecalculated;
@@ -240,7 +240,7 @@ menuStatus_t menuSatelliteScreen(uiEvent_t *ev, bool isFirstRun)
 				updateScreen(ev, false, false);
 			}
 
-#if ! defined(DISABLE_SAT_ALARM)
+#if defined(ENABLE_SAT_ALARM)
 			if ((uiDataGlobal.SatelliteAndAlarmData.alarmType == ALARM_TYPE_SATELLITE) &&
 				(uiDataGlobal.dateTimeSecs >= uiDataGlobal.SatelliteAndAlarmData.alarmTime))
 			{
@@ -1063,7 +1063,7 @@ static void handleEvent(uiEvent_t *ev)
 		return;
 	}
 
-#if ! defined(DISABLE_SAT_ALARM)
+#if defined(ENABLE_SAT_ALARM)
 	if (ev->keys.event & KEY_MOD_PRESS)
 	{
 		// Cancels currently beeping alarm
@@ -1081,7 +1081,7 @@ static void handleEvent(uiEvent_t *ev)
 		{
 			case KEY_GREEN:
 			{
-#if ! defined(DISABLE_SAT_ALARM)
+#if defined(ENABLE_SAT_ALARM)
 				uint32_t alarmTime;
 
 				// Cancels ongoing alarm
@@ -1098,7 +1098,7 @@ static void handleEvent(uiEvent_t *ev)
 				{
 					selectSatellite(predictionsListSelectedSatellite);
 
-#if defined(DISABLE_SAT_ALARM)
+#if ! defined(ENABLE_SAT_ALARM)
 					/* No alarm to set, so there is nothing for SK2 to mean here and
 					 * Green always opens the tracking screen. */
 					if (true)
@@ -1131,7 +1131,7 @@ static void handleEvent(uiEvent_t *ev)
 					}
 				}
 
-#if ! defined(DISABLE_SAT_ALARM)
+#if defined(ENABLE_SAT_ALARM)
 				if (BUTTONCHECK_DOWN(ev, BUTTON_SK2))
 				{
 					alarmTime = currentActiveSatellite->predictions.passes[currentActiveSatellite->predictions.selectedPassNumber].satelliteAOS - ALARM_OFFSET_SECS;
@@ -1517,7 +1517,12 @@ static bool calculatePredictionsForSatelliteIndex(int satelliteIndex)
 
 					satellite->predictions.passes[satellite->predictions.numPassBeingPredicted].valid = PREDICTION_RESULT_OK;
 					satellite->predictions.numPasses++;
-					if (satellite->predictions.numPasses < (NUM_SATELLITE_PREDICTIONS - 1))
+					// 上游写的是 (NUM - 1)，于是循环在 numPasses == NUM-1 时回退一格，
+					// 实际只填到 NUM-2 个过境，而最后一个槽 passes[NUM-1] 从头到尾没人碰 ——
+					// 15 个槽只给了 13 个过境，白扔一格。槽位少的时候这一格占比更难看（1/5）。
+					// 改成 NUM 之后：passes[0..NUM-2] 是真过境，passes[NUM-1] 放截断哨兵，
+					// 一格不浪费。numPassBeingPredicted 最大到 NUM-1，仍在界内。
+					if (satellite->predictions.numPasses < NUM_SATELLITE_PREDICTIONS)
 					{
 						if (findSelectedPass && (selectedPassAOS == satellite->predictions.passes[satellite->predictions.numPassBeingPredicted].satelliteAOS))
 						{

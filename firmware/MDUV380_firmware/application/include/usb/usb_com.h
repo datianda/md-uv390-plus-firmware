@@ -61,18 +61,17 @@ extern USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE) uint8_t usbComSendBuf[COM
 #endif
 extern bool isCompressingAMBE;
 
-extern volatile bool usbIsResetting;
 
 void tick_com_request(void);
 void send_packet(uint8_t val_0x82, uint8_t val_0x86, int ram);
 void send_packet_big(uint8_t val_0x82, uint8_t val_0x86, int ram1, int ram2);
 void add_to_commbuffer(uint8_t value);
-bool USB_DeviceIsResetting(void);
+void usbEnsureFullClockIfConnected(void);// 见 usb_com.c：原 USB_DeviceIsResetting()，判据是死的、副作用是真的
 
 void USB_DEBUG_PRINT(const char *str);
 void USB_DEBUG_printf(const char *format, ...) __attribute__((format(__printf__, 1, 2)));
 
-#if defined(ENABLE_KEY_INJECTION)
+#if defined(ENABLE_DIAG)
 /* Dev-only USB remote keypad. usbKeyInjectTick() is called once per main-loop
  * iteration; when a USB-injected key is pending (and no real key is active) it
  * fills *outEvent (keyboardCode_t.event bits) + *outKey and returns true. */

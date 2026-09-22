@@ -119,9 +119,25 @@ extern volatile bool trxIsTransmittingDMR;
 extern volatile uint32_t trxDMRstartTime;
 
 bool trxCarrierDetected(RadioDevice_t deviceId);
-#if defined(ENABLE_SPECTRUM)
-uint8_t trxGetAnalogSquelchThreshold(void);   // DEV: see trx.c. CPS 0xAC.
-#endif
+/*
+ * 静噪判决的三个常数。**必须在任何条件编译之外** —— trx.c 无条件用它们。
+ * 原来它们埋在 trx.c 里（头文件看不见），于是 tools/squelchtrace.py 和
+ * tools/leddiag.py 各自在主机侧抄了一份，三份副本会漂。搬到头文件时我一度
+ * 把它们放进了 #if defined(ENABLE_SPECTRUM) 块里，结果开诊断能编、stock 编不过 ——
+ * 是新加的 CI 组合矩阵第一次跑就抓到的。
+ *
+ * 搬到头文件只解决了一半：真正的解法是**固件直接把算好的门限报出来**，
+ * 主机别自己套公式（CPS 0x99 的第 19/20 字节）。
+ */
+#define TRX_SQUELCH_MAX   70   // sql=1 时的门限
+#define TRX_SQUELCH_INC    3   // 每加一级 sql 门限降多少
+#define TRX_SQUELCH_HIST   3   // 迟滞：噪声 > 门限+此值 才关
+
+/* 原来只在 ENABLE_SPECTRUM 下声明（它最早是给 CPS 0xAC 的扫描工具用的）。
+ * 后来 0x99 诊断也要报这个门限，而 0x99 在 ENABLE_DIAG 下 —— 于是
+ * "开诊断、不开频谱"就编不过。是新加的 CI 组合矩阵抓到的，不是人想出来的。
+ * 它不依赖频谱的任何东西，无条件声明即可。 */
+uint8_t trxGetAnalogSquelchThreshold(void);   // CPS 0xAC 与 0x99 都用
 bool trxCheckDigitalSquelch(RadioDevice_t deviceId);
 bool trxCheckAnalogSquelch(void);
 void trxResetSquelchesState(RadioDevice_t deviceId);
