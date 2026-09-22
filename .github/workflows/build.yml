@@ -6,6 +6,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  # The repo is synced by hand from the working tree, so nothing systematic stops a
+  # blob being copied across. This job is that missing check: it refuses the push if
+  # a codec blob, radio flash dump, CJK font blob, font file, reference source tree
+  # or token is tracked. It runs once, not per matrix entry.
+  publish-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refuse to publish blobs, dumps or tokens
+        run: python3 tools/publish_check.py .
+
   build:
     runs-on: ubuntu-latest
     strategy:
